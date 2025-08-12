@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ラボ用 計算アプリ（プロトタイプ v0.17）</title>
+<title>ラボ用 計算アプリ（プロトタイプ v0.18）</title>
 <style>
   :root{ --panel-width: 420px; --panel-bg:#fff; --panel-border:#e6e6e6; --accent:#2f54eb; --muted:#666; }
   *{ box-sizing:border-box }
@@ -52,18 +52,18 @@
 <body>
   <div class="content">
     <h1>デモページ</h1>
-    <p class="desc">右に <strong>「ラボ用 計算アプリ（プロトタイプ v0.17）」</strong>。新タブ「細胞培養の試薬調整」を追加。</p>
+    <p class="desc">右に <strong>「ラボ用 計算アプリ（プロトタイプ v0.18）」</strong>。MEM/RPMIを体積ボタンで即計算できるようにしました。</p>
   </div>
 
-  <aside class="right-panel" role="complementary" aria-label="ラボ用 計算アプリ（プロトタイプ v0.17）">
+  <aside class="right-panel" role="complementary" aria-label="ラボ用 計算アプリ（プロトタイプ v0.18）">
     <div class="panel-header">
-      <span class="badge">v0.17</span><div class="title">ラボ用 計算アプリ（プロトタイプ）</div>
+      <span class="badge">v0.18</span><div class="title">ラボ用 計算アプリ（プロトタイプ）</div>
     </div>
     <div class="tabs">
       <button class="tab-btn active" data-tab="cells">細胞数/生存率</button>
       <button class="tab-btn" data-tab="agarose">アガロースゲル</button>
       <button class="tab-btn" data-tab="sterile">滅菌</button>
-      <button class="tab-btn" data-tab="reagents">細胞培養の試薬調整</button><!-- ★ 新タブ -->
+      <button class="tab-btn" data-tab="reagents">細胞培養の試薬調整</button>
       <button class="tab-btn" data-tab="disposal">捨て方</button>
       <button class="tab-btn" data-tab="pcr">PCR</button>
       <button class="tab-btn" data-tab="culture">細胞培養</button>
@@ -73,7 +73,7 @@
     </div>
 
     <div class="panel-body">
-      <!-- ===== Cells (既存) ===== -->
+      <!-- ===== Cells ===== -->
       <section id="tab-cells">
         <div class="card">
           <h3>入力</h3>
@@ -112,7 +112,7 @@
         </div>
       </section>
 
-      <!-- ===== Agarose (既存) ===== -->
+      <!-- ===== Agarose ===== -->
       <section id="tab-agarose" style="display:none;">
         <div class="card">
           <h3>基本設定</h3>
@@ -192,7 +192,7 @@
         </div>
       </section>
 
-      <!-- ===== 滅菌 (既存) ===== -->
+      <!-- ===== 滅菌 ===== -->
       <section id="tab-sterile" style="display:none;">
         <div class="card">
           <h3>器具から滅菌方法を検索</h3>
@@ -243,7 +243,7 @@
         <div class="card"><h3>記録一覧</h3><div id="sterileTable" class="note">まだ記録がありません。</div></div>
       </section>
 
-      <!-- ===== 細胞培養の試薬調整（新規） ===== -->
+      <!-- ===== 細胞培養の試薬調整 ===== -->
       <section id="tab-reagents" style="display:none;">
         <div class="card">
           <h3>プリセットを選択</h3>
@@ -263,8 +263,8 @@
                   <option value="strep_100mg">ストレプトマイシン 100 mg/mL</option>
                   <option value="pen_100k">ペニシリン 100,000 U/mL</option>
                 </optgroup>
-                <optgroup label="バッファ（X→1×）">
-                  <option value="pbs1x">1× PBS(-)（10×ストックから）</option>
+                <optgroup label="配合（テキスト手順）">
+                  <option value="pbs1x">1× PBS(-)</option>
                 </optgroup>
               </select>
             </div>
@@ -274,7 +274,14 @@
 
         <div class="card">
           <h3>計算ツール</h3>
-          <div class="field"><div class="label">最終体積 V<sub>2</sub></div><div><input type="number" id="V2" value="100"><span class="suffix">mL</span></div></div>
+          <div class="field">
+            <div class="label">最終体積 V<sub>2</sub></div>
+            <div>
+              <input type="number" id="V2" value="100"><span class="suffix">mL</span>
+              <button class="btn" onclick="setV2(100)">100 mL</button>
+              <button class="btn" onclick="setV2(500)">500 mL</button>
+            </div>
+          </div>
 
           <div class="card" style="margin:8px 0;">
             <h3>1) C1V1＝C2V2（mg/mL・U/mLなど）</h3>
@@ -289,7 +296,7 @@
             <h3>2) % w/v 溶液</h3>
             <div class="field"><div class="label">濃度（%）</div><div><input type="number" id="pct" step="0.01"></div></div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn" onclick="calcPercent()">計算</button><button class="btn" onclick="fillFromPreset()">プリセット値を反映</button></div>
-            <div class="row"><div class="label">秤量する固形物</div><div class="value" id="r_grams">— g（溶媒は水として近似）</div></div>
+            <div class="row"><div class="label">秤量する固形物</div><div class="value" id="r_grams">— g（定容で — mL）</div></div>
           </div>
 
           <div class="card" style="margin:8px 0;">
@@ -315,7 +322,7 @@
         </div>
       </section>
 
-      <!-- ===== 捨て方 / PCR / Culture / Lysis / Recipes / Tests（既存） ===== -->
+      <!-- ===== 捨て方 / PCR / Culture / Lysis / Recipes / Tests ===== -->
       <section id="tab-disposal" style="display:none;">
         <div class="card"><h3>SOP / 参考リンク</h3><div class="field"><div class="label">URLまたはメモ</div><div><input type="text" id="dispSOP" placeholder="例: 学内規程URL"></div></div><div class="note">区分や容器は所属ラボ規程に合わせてください。</div></div>
         <div class="card">
@@ -440,6 +447,7 @@
   function fmt(x,d=2){ if(!Number.isFinite(x)) return '—'; return x.toLocaleString(undefined,{maximumFractionDigits:d}); }
   function clearChecklist(cls){ document.querySelectorAll('.'+cls).forEach(c=>c.checked=false); }
   function toCSV(rows){ if(!rows.length) return ''; const keys=Object.keys(rows[0]); const esc=s=>`"${String(s??'').replace(/"/g,'""')}"`; return [keys.map(esc).join(','), ...rows.map(r=>keys.map(k=>esc(r[k])).join(','))].join('\n'); }
+  function downloadCSV(filename, rows){ const csv=toCSV(rows); if(!csv) return; const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
   function renderTable(el, rows){ if(!rows.length){ el.innerHTML='<div class="note">まだ記録がありません。</div>'; return; } const keys=Object.keys(rows[0]); let html='<table><thead><tr>'+keys.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>'; html+=rows.map(r=>'<tr>'+keys.map(k=>'<td>'+(r[k]??'')+'</td>').join('')+'</tr>').join(''); html+='</tbody></table>'; el.innerHTML=html; }
   function clearForm(sectionId){
     const sec=document.getElementById(sectionId);
@@ -545,7 +553,7 @@
     document.getElementById('recipeOutA').innerHTML=html;
   }
 
-  // Canvas: 簡易ゲル図
+  // Canvas preview
   function drawGelCanvas(travel_cm, gelPct){
     const c=document.getElementById('gelCanvas'); if(!c) return;
     const ctx=c.getContext('2d'); const W=c.width, H=c.height;
@@ -584,7 +592,7 @@
     document.getElementById('recipeOut').innerHTML=html;
   }
 
-  // ==== 滅菌（既存DB） ====
+  // ==== 滅菌：プリセット ====
   const STERILE_DB = {
     methods: {
       autoclave121: { name:'オートクレーブ（121°C 15–20分）', detail:'液体は液体プログラム。自然冷却。キャップを緩める。', caution:'沸騰・噴出、過充填に注意。' },
@@ -691,21 +699,76 @@
     if(note) note.value=('カタログ: '+detail);
   }
 
-  // ==== 試薬調整：プリセット ====
+  // ==== 試薬調整：プリセット（あなたの表を反映） ====
   const REAGENTS = [
-    { id:'mem',   name:'MEM培地',         method:'メーカーの添付文書に従い調整（粉末/液体）。必要に応じてNaHCO₃・L-グルタミンを添加。', note:'SOP優先・ろ過滅菌の可否は製品仕様を確認。', preset:{} },
-    { id:'rpmi',  name:'RPMI1640培地',    method:'メーカーの添付文書に従い調整。通常はNaHCO₃を添加。', note:'SOP優先。', preset:{} },
-    { id:'nahco3_10', name:'10% NaHCO₃',  method:'粉末を水で溶解して 10%（w/v）に。完全溶解後、0.22 µmでろ過滅菌。', note:'CO₂暴露でpHが変動しやすい。', preset:{ mode:'percent', pct:10 } },
-    { id:'gln_3', name:'3% グルタミン',   method:'粉末を水で 3%（w/v）。必要ならpH調整→0.22 µm ろ過。', note:'グルタミンは不安定。小分け凍結。', preset:{ mode:'percent', pct:3 } },
-    { id:'strep_100mg', name:'ストレプトマイシン 100 mg/mL', method:'粉末を滅菌水で 100 mg/mL。0.22 µmろ過→分注凍結（-20°C）。', note:'凍解回数を記録。', preset:{ mode:'c1v1', C1:100, C2:100, unit:'mg/mL' } },
-    { id:'pen_100k', name:'ペニシリン 100,000 U/mL', method:'規定の溶媒で 100,000 U/mL。0.22 µmろ過→分注凍結。', note:'力価換算は製品に従う。', preset:{ mode:'c1v1', C1:100000, C2:100000, unit:'U/mL' } },
-    { id:'tb_0_4', name:'0.4% トリパンブルー', method:'粉末から 0.4%（w/v）に調製。既製の0.4%滅菌品を使うのも可。', note:'染色剤の廃棄はSOPに従う。', preset:{ mode:'percent', pct:0.4 } },
-    { id:'pbs1x', name:'1× PBS(-)（10×から希釈）', method:'10×PBSストックを水で希釈して 1× に。', note:'滅菌済み水を使用。', preset:{ mode:'factor', stockX:10, finalX:1 } },
+    {
+      id:'mem',
+      name:'MEM培地',
+      method:'MEM培地0.94 g、MilliQ水100 mL、オートクレーブ滅菌。',
+      note:'製品の添付文書/SOPを最優先。必要に応じて添加剤（NaHCO₃, L-グルタミン等）を別途調整。',
+      preset:{ mode:'percent', pct:0.94 }
+    },
+    {
+      id:'rpmi',
+      name:'RPMI1640培地',
+      method:'RPMI1640培地1.02 g、MilliQ水100 mL、オートクレーブ滅菌。',
+      note:'製品の添付文書/SOPを最優先。',
+      preset:{ mode:'percent', pct:1.02 }
+    },
+    {
+      id:'nahco3_10',
+      name:'10% NaHCO₃',
+      method:'NaHCO₃ 10.0 g、超純水100 mL。スターラーで撹拌して溶かす。スターラーバーを取り除き、ラベルしてオートクレーブ滅菌。',
+      note:'',
+      preset:{ mode:'percent', pct:10 }
+    },
+    {
+      id:'gln_3',
+      name:'3% グルタミン',
+      method:'超純水10 mLを15 mLチューブに入れる。グルタミン0.3 gを加えて溶解。0.22 μmでろ過滅菌→ラベルした滅菌15 mLチューブに入れ、冷凍保存。',
+      note:'',
+      preset:{ mode:'percent', pct:3 }
+    },
+    {
+      id:'strep_100mg',
+      name:'100 mg/mL ストレプトマイシン',
+      method:'超純水5 mLを15 mLチューブへ。ストレプトマイシン0.5 gを加えて溶解。0.22 μmでろ過滅菌→ラベルした滅菌15 mLチューブに入れ、冷凍保存。',
+      note:'',
+      preset:{ mode:'c1v1', C1:100, C2:100, unit:'mg/mL' }
+    },
+    {
+      id:'pen_100k',
+      name:'100,000 U/mL ペニシリン',
+      method:'超純水5 mLを15 mLチューブへ。ペニシリン500,000 U相当量を量り取り溶解。0.22 μmでろ過滅菌→ラベルした滅菌15 mLチューブに入れ、冷凍保存。',
+      note:'力価換算は製品の規定に従う。',
+      preset:{ mode:'c1v1', C1:100000, C2:100000, unit:'U/mL' }
+    },
+    {
+      id:'tb_0_4',
+      name:'0.4% トリパンブルー',
+      method:'（要確認）粉末から0.4%（w/v）に調製し、0.22 μmでろ過滅菌。暗所保存。',
+      note:'ラボSOPに合わせて保存条件を確定してください。',
+      preset:{ mode:'percent', pct:0.4 }
+    },
+    {
+      id:'pbs1x',
+      name:'1× PBS(-)',
+      method:'超純水500 mLをメスシリンダーで量り取りビーカーへ。500 mL目盛を付け、約100 mLを戻す。NaCl 4.0 g、KCl 0.1 g、Na₂HPO₄·12H₂O 1.45 g、KH₂PO₄ 0.1 gを順に溶かす。500 mLにメスアップ。ラベルした瓶に移しオートクレーブ滅菌。冷凍保存。',
+      note:'',
+      preset:{}
+    },
   ];
-
   function renderReagTable(){
     const rows = REAGENTS.map(r=>({ 培地名:r.name, 調整方法:r.method, 注意点:r.note }));
     renderTable(document.getElementById('reagTable'), rows);
+  }
+
+  // V2 ショートカット
+  function setV2(v){
+    const el = document.getElementById('V2');
+    if(!el) return;
+    el.value = v;
+    calcC1V1(); calcPercent(); calcFactor();
   }
 
   // プリセット選択→ガイドと計算パネルへ
@@ -714,16 +777,13 @@
     const r = REAGENTS.find(x=>x.id===id);
     if(!r) return;
     document.getElementById('reagGuide').innerHTML =
-      `<div class="note"><strong>${r.name}</strong><br>${r.method}<br>注意：${r.note}</div>`;
-    // おすすめ入力を反映
+      `<div class="note"><strong>${r.name}</strong><br>${r.method}${r.note?('<br>注意：'+r.note):''}</div>`;
     fillFromPreset();
   });
 
   function fillFromPreset(){
     const id = document.getElementById('reagPreset').value;
     const r = REAGENTS.find(x=>x.id===id); if(!r) return;
-    const V2 = n(document.getElementById('V2').value)||100;
-    // 初期体積はそのまま維持
     if(r.preset.mode==='percent'){
       document.getElementById('pct').value = r.preset.pct ?? '';
     }else if(r.preset.mode==='c1v1'){
@@ -735,12 +795,14 @@
       document.getElementById('stockFactor').value = r.preset.stockX ?? 10;
       document.getElementById('finalFactor').value = r.preset.finalX ?? 1;
     }
-    // 自動で適切な計算も一回流す
     calcC1V1(); calcPercent(); calcFactor();
   }
 
   // 1) C1V1=C2V2
   function calcC1V1(){
+    const C1input=document.getElementById('C1');
+    const C2input=document.getElementById('C2');
+    const V2input=document.getElementById('V2');
     const C1=n(C1input.value), C2=n(C2input.value), V2=n(V2input.value);
     const warn = document.getElementById('reagWarn');
     if(C1<=0 || V2<=0){ document.getElementById('r_v1').textContent='— mL'; document.getElementById('r_dil').textContent='— mL'; warn.style.display='block'; return; }
@@ -750,18 +812,14 @@
     document.getElementById('r_dil').textContent = (dil<0||!isFinite(dil))?'— mL':fmt(dil,3)+' mL';
     warn.style.display = (V1<0 || dil<0)?'block':'none';
   }
-  // ID短縮参照
-  const C1input=document.getElementById('C1');
-  const C2input=document.getElementById('C2');
-  const V2input=document.getElementById('V2');
 
   // 2) % w/v
   function calcPercent(){
     const pct=n(document.getElementById('pct').value);
     const V2=n(document.getElementById('V2').value);
-    if(pct<=0 || V2<=0){ document.getElementById('r_grams').textContent='— g'; return; }
-    const g=(pct/100)*V2; // 水の密度1 g/mL近似
-    document.getElementById('r_grams').textContent=fmt(g,3)+' g';
+    if(pct<=0 || V2<=0){ document.getElementById('r_grams').textContent='— g（定容で — mL）'; return; }
+    const g=(pct/100)*V2;
+    document.getElementById('r_grams').textContent=fmt(g,3)+' g（定容で '+fmt(V2,0)+' mL）';
   }
 
   // 3) X→最終
@@ -782,27 +840,23 @@
   function testsPush(list,name,pass){ list.push({name,pass}); }
   function runTests(){
     const results=[];
-    // 既存テスト
     { const DF=(50+50)/50, liveAvg=120/4, totalAvg=(120+30)/4, live=liveAvg*DF*1e4, total=totalAvg*DF*1e4; testsPush(results,'Cells 基本', live===600000 && total===750000); }
     { const g=(1.5/100)*30; testsPush(results,'Gel 秤量 1.5%/30mL=0.45g', Math.abs(g-0.45)<1e-9); }
     { const s=30/50; testsPush(results,'50×→1× 30mL=0.6mL', Math.abs(s-0.6)<1e-9); }
     { const V=10*10, t=8/(10*0.02); testsPush(results,'電圧100V/時間40分', Math.abs(V-100)<1e-9 && Math.abs(t-40)<1e-9); }
-    // 新テスト（試薬調整）
-    { const g=0.4/100*100; testsPush(results,'%w/v 0.4%/100mL=0.4g', Math.abs(g-0.4)<1e-9); }
-    { const V1=(10*50)/100; testsPush(results,'C1V1: 100→10 mg/mL, 50mLで5mL', Math.abs(V1-5)<1e-9); }
+    // Reagents
+    { const g=0.94/100*500; testsPush(results,'MEM 0.94% / 500mL = 4.7g', Math.abs(g-4.7)<1e-9); }
+    { const g2=1.02/100*100; testsPush(results,'RPMI 1.02% / 100mL = 1.02g', Math.abs(g2-1.02)<1e-9); }
     { const Vx=500*(1/10); testsPush(results,'X希釈: 10×→1× 500mLで50mL', Math.abs(Vx-50)<1e-9); }
     const ul=document.getElementById('testsOut'); ul.innerHTML=''; results.forEach(r=>{ const li=document.createElement('li'); li.textContent=(r.pass?'PASS':'FAIL')+' — '+r.name; li.style.color=r.pass?'#237804':'#cf1322'; ul.appendChild(li); });
   }
 
   // ==== 初期化 ====
   function init(){
-    // 滅菌
     sterileInitCatalog();
-    // 試薬調整
     renderReagTable();
-    document.getElementById('reagPreset').value='nahco3_10';
+    document.getElementById('reagPreset').value='mem';
     document.getElementById('reagPreset').dispatchEvent(new Event('change'));
-    // 既存
     calcCells();
     calcAgarose();
     drawGelCanvas(document.getElementById('travel').value || 0, document.getElementById('gelPct').value || NaN);
