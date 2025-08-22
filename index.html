@@ -49,6 +49,18 @@
     .card{ break-inside:avoid }
   }
 </style>
+  <!-- PWA: manifest & iOS 全画面/アイコン/ラベル -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2f54eb">
+
+<!-- iOS: ホーム画面ラベルを「ラボ用 計算アプリ」に固定 -->
+<meta name="apple-mobile-web-app-title" content="ラボ用 計算アプリ">
+
+<!-- iOS: アイコン/全画面モード -->
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
 </head>
 <body>
   <div class="content">
@@ -1401,6 +1413,37 @@
   }
   init();
 </script>
+  <script>
+  // PWA: Service Worker 登録（GitHub Pages は HTTPS なのでOK）
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(console.error);
+  }
+
+  // manifest の shortcuts から ?tab=cells 等で起動タブを指定
+  (function openTabFromQuery() {
+    const p = new URLSearchParams(location.search);
+    const t = p.get('tab');
+    if (!t) return;
+    const btn = document.querySelector(`.tab-btn[data-tab="${t}"]`);
+    if (btn) btn.click();
+  })();
+</script>
+<script>
+  // PWA: Service Worker 登録（GitHub Pages は HTTPS なのでOK）
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(console.error);
+  }
+
+  // manifest の shortcuts から ?tab=cells 等で起動タブを指定
+  (function openTabFromQuery() {
+    const p = new URLSearchParams(location.search);
+    const t = p.get('tab');
+    if (!t) return;
+    const btn = document.querySelector(`.tab-btn[data-tab="${t}"]`);
+    if (btn) btn.click();
+  })();
+</script>
+
 </body>
 </html>
 
