@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ラボ用 計算アプリ（プロトタイプ v0.21）</title>
+<title>ラボ用 計算アプリ（プロトタイプ v0.22）</title>
 <style>
   :root{ --panel-width: 420px; --panel-bg:#fff; --panel-border:#e6e6e6; --accent:#2f54eb; --muted:#666; }
   *{ box-sizing:border-box }
@@ -40,6 +40,7 @@
   table{ width:100%; border-collapse:collapse; font-size:12px }
   th,td{ border-bottom:1px solid #f0f0f0; text-align:left; padding:6px 4px }
   th{ color:#555; font-weight:600 }
+  .timer{ font-variant-numeric:tabular-nums; font-weight:700; letter-spacing:0.5px }
   @media (max-width:980px){ .right-panel{ width:100% } }
   @media print{
     body{ background:#fff }
@@ -52,12 +53,12 @@
 <body>
   <div class="content">
     <h1>デモページ</h1>
-    <p class="desc">右に <strong>「ラボ用 計算アプリ（プロトタイプ v0.21）」</strong>。細胞数・アガロース・滅菌・試薬調整に加え、凍結/解凍/継代のチェックリスト付き。</p>
+    <p class="desc">右に <strong>「ラボ用 計算アプリ（プロトタイプ v0.22）」</strong>。共有・タイマーを追加。Webのみで動き、将来のネイティブラップ準備にも対応。</p>
   </div>
 
-  <aside class="right-panel" role="complementary" aria-label="ラボ用 計算アプリ（プロトタイプ v0.21）">
+  <aside class="right-panel" role="complementary" aria-label="ラボ用 計算アプリ（プロトタイプ v0.22）">
     <div class="panel-header">
-      <span class="badge">v0.21</span><div class="title">ラボ用 計算アプリ（プロトタイプ）</div>
+      <span class="badge">v0.22</span><div class="title">ラボ用 計算アプリ（プロトタイプ）</div>
     </div>
 
     <div class="tabs">
@@ -120,6 +121,11 @@
           <div class="row"><div class="label">継代培養に必要な細胞液量（目標濃度 ÷ 生細胞濃度 × 容器液量）</div><div class="value" id="r_needCellVol">— mL</div></div>
           <div class="row"><div class="label">継代培養に必要な培地（容器液量 − 必要細胞液量）</div><div class="value" id="r_needMedia">— mL</div></div>
           <div id="cellsWarn" class="warn" style="display:none;">目標濃度が高すぎる可能性：必要な細胞液量が容器液量を超えています。条件を見直してください。</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+            <button class="btn" onclick="cellsShare()">結果を共有</button>
+            <button class="btn" onclick="cellsExportCSV()">CSVエクスポート</button>
+            <button class="btn" onclick="window.print()">PDF/印刷</button>
+          </div>
         </div>
       </section>
 
@@ -181,6 +187,18 @@
           <div class="row"><div class="label">推定移動速度（係数×電場）</div><div class="value" id="r_speed">— cm/分</div></div>
           <div class="row"><div class="label">所要時間（移動距離÷速度）</div><div class="value" id="r_time">— 分</div></div>
           <div class="note">※ 速度係数は経験則（既定 0.02）。ラボの実測に合わせて調整してください。</div>
+        </div>
+
+        <div class="card">
+          <h3>共有 & タイマー</h3>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+            <button class="btn" onclick="shareGel()">設定を共有（PNG+テキスト）</button>
+            <button class="btn btn-primary" onclick="startGelTimer()">タイマー開始</button>
+            <button class="btn" onclick="stopGelTimer()">停止</button>
+            <button class="btn" onclick="addGelIcs()">カレンダー追加（.ics）</button>
+          </div>
+          <div>タイマー： <span id="gelTimer" class="timer">—:—</span></div>
+          <div class="note">※ 通知はブラウザ制約あり（インストール型PWA/ネイティブラップで強化可能）。</div>
         </div>
 
         <div class="card">
@@ -575,13 +593,50 @@
   function fmt(x,d=2){ if(!Number.isFinite(x)) return '—'; return x.toLocaleString(undefined,{maximumFractionDigits:d}); }
   function clearChecklist(cls){ document.querySelectorAll('.'+cls).forEach(c=>c.checked=false); }
   function toCSV(rows){ if(!rows.length) return ''; const keys=Object.keys(rows[0]); const esc=s=>`"${String(s??'').replace(/"/g,'""')}"`; return [keys.map(esc).join(','), ...rows.map(r=>keys.map(k=>esc(r[k])).join(','))].join('\n'); }
-  function downloadCSV(filename, rows){ const csv=toCSV(rows); if(!csv) return; const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
+  function downloadCSV(filename, rows){ const csv=toCSV(rows); if(!csv) return; const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); downloadBlob(filename, blob); }
   function renderTable(el, rows){ if(!rows.length){ el.innerHTML='<div class="note">まだ記録がありません。</div>'; return; } const keys=Object.keys(rows[0]); let html='<table><thead><tr>'+keys.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>'; html+=rows.map(r=>'<tr>'+keys.map(k=>'<td>'+(r[k]??'')+'</td>').join('')+'</tr>').join(''); html+='</tbody></table>'; el.innerHTML=html; }
   function clearForm(sectionId){
     const sec=document.getElementById(sectionId);
     sec.querySelectorAll('input[type=number],input[type=text],input[type=date],textarea').forEach(el=>{ if(!el.readOnly){ el.value=''; }});
     sec.querySelectorAll('select').forEach(s=>s.selectedIndex=0);
   }
+  // download & share helpers
+  function downloadBlob(filename, blob){
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+  async function shareFilesOrDownload(files, title, text, fallbackName, fallbackBlob){
+    try{
+      if(navigator.canShare && navigator.canShare({files}) && navigator.share){
+        await navigator.share({ files, title, text });
+        return true;
+      }
+    }catch(e){ /* fallthrough */ }
+    // fallback: download first file or fallback blob
+    if(files && files.length){ downloadBlob(files[0].name, files[0]); }
+    else if(fallbackBlob){ downloadBlob(fallbackName, fallbackBlob); }
+    return false;
+  }
+  function beep(times=3){
+    try{
+      const ctx=new (window.AudioContext||window.webkitAudioContext)();
+      let t=ctx.currentTime;
+      for(let i=0;i<times;i++){
+        const o=ctx.createOscillator(), g=ctx.createGain();
+        o.type='sine'; o.frequency.setValueAtTime(880, t);
+        g.gain.setValueAtTime(0.001, t);
+        g.gain.exponentialRampToValueAtTime(0.3, t+0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, t+0.2);
+        o.connect(g).connect(ctx.destination);
+        o.start(t); o.stop(t+0.21);
+        t+=0.25;
+      }
+    }catch(e){}
+  }
+  function vibrate(ms=300){ if(navigator.vibrate) navigator.vibrate(ms); }
+  function mmss(sec){ const s=Math.max(0,Math.floor(sec)); const m=Math.floor(s/60), r=s%60; return String(m).padStart(2,'0')+':'+String(r).padStart(2,'0'); }
 
   // ==== Cells ====
   function calcCells(){
@@ -621,6 +676,42 @@
     document.getElementById('r_needCellVol').textContent=fmt(needCellVol,3)+' mL';
     document.getElementById('r_needMedia').textContent=fmt(needMedia,3)+' mL';
     document.getElementById('cellsWarn').style.display=(needCellVol>containerVol+1e-12 || needMedia<-1e-12)?'block':'none';
+  }
+  function collectCellsResults(){
+    const grab=id=>document.getElementById(id).textContent.replace(/[, ]/g,'');
+    return {
+      生細胞数合計: grab('r_liveSum'),
+      生細胞数平均: grab('r_liveAvg'),
+      死細胞数合計: grab('r_deadSum'),
+      死細胞数平均: grab('r_deadAvg'),
+      全細胞数合計: grab('r_totalSum'),
+      全細胞数平均: grab('r_totalAvg'),
+      必要液量uL: document.getElementById('r_totalMix').textContent.replace(/[^\d.-]/g,''),
+      希釈倍率: grab('r_DF'),
+      生存率pct: grab('r_viab'),
+      生細胞濃度cells_mL: grab('r_liveConc'),
+      全細胞濃度cells_mL: grab('r_totalConc'),
+      凍結チューブ中全細胞数: grab('r_frozen'),
+      容器内生細胞数: grab('r_container'),
+      継代必要細胞液量mL: grab('r_needCellVol'),
+      継代必要培地mL: grab('r_needMedia'),
+      計算日時: new Date().toLocaleString()
+    }
+  }
+  function cellsExportCSV(){ const row=collectCellsResults(); downloadCSV('cells_results.csv',[row]); }
+  async function cellsShare(){
+    const row=collectCellsResults();
+    const csv=toCSV([row]);
+    const blob=new Blob([csv],{type:'text/csv'});
+    const file=new File([blob],'cells_results.csv',{type:'text/csv'});
+    const text =
+      `細胞数/生存率（概要）
+生平均: ${document.getElementById('r_liveAvg').textContent}
+全平均: ${document.getElementById('r_totalAvg').textContent}
+生存率: ${document.getElementById('r_viab').textContent}
+生濃度: ${document.getElementById('r_liveConc').textContent}
+全濃度: ${document.getElementById('r_totalConc').textContent}`;
+    await shareFilesOrDownload([file],'細胞数結果', text, 'cells_results.csv', blob);
   }
 
   // ==== Agarose ====
@@ -704,6 +795,80 @@
     ctx.fillText('0 cm', gelX, gelY-10);
     ctx.fillText(maxTravel+' cm', gelX, gelY+gelH+16);
     ctx.fillText('濃度: '+(Number.isFinite(n(gelPct))?gelPct:'—')+' %', gelX+gelW-110, gelY-10);
+  }
+
+  // ===== 新規：Agarose 共有 & タイマー =====
+  async function shareGel(){
+    // 1) テキストまとめ
+    const txt = `アガロース設定
+バッファ: ${document.getElementById('kind').value}
+ゲル濃度: ${document.getElementById('gelPct').value || '—'} %
+ゲル体積: ${document.getElementById('gelVol').value || '—'} mL
+泳動用1×: ストック ${document.getElementById('r_stock').textContent}, 水 ${document.getElementById('r_water').textContent}
+推奨電圧: ${document.getElementById('r_voltage').textContent}
+所要時間: ${document.getElementById('r_time').textContent}`;
+    // 2) Canvas を PNG にして添付（対応端末のみ）
+    const canvas=document.getElementById('gelCanvas');
+    if(canvas && canvas.toBlob){
+      canvas.toBlob(async blob=>{
+        const file=new File([blob],'gel_preview.png',{type:'image/png'});
+        await shareFilesOrDownload([file],'アガロース設定',txt,'gel_preview.png',blob);
+      },'image/png');
+    }else{
+      const blob=new Blob([txt],{type:'text/plain'});
+      await shareFilesOrDownload([], 'アガロース設定', txt, 'agarose.txt', blob);
+    }
+  }
+
+  let gelTimerH=null, gelTimerEnd=0;
+  function getAgaroseMinutes(){
+    const field=n(document.getElementById('field').value);
+    const travel=n(document.getElementById('travel').value);
+    const velCoeff=n(document.getElementById('velCoeff').value);
+    const speed=field*velCoeff; // cm/min
+    return speed>0 ? travel/speed : 0;
+  }
+  function startGelTimer(){
+    const minutes=getAgaroseMinutes();
+    if(!minutes || !isFinite(minutes)){ document.getElementById('gelTimer').textContent='—:—'; return; }
+    const sec=Math.round(minutes*60);
+    gelTimerEnd = Date.now()+sec*1000;
+    if(gelTimerH) clearInterval(gelTimerH);
+    updateGelTimer();
+    gelTimerH=setInterval(updateGelTimer, 250);
+  }
+  function stopGelTimer(){ if(gelTimerH){ clearInterval(gelTimerH); gelTimerH=null; } document.getElementById('gelTimer').textContent='—:—'; }
+  function updateGelTimer(){
+    const rem=Math.max(0, Math.round((gelTimerEnd-Date.now())/1000));
+    document.getElementById('gelTimer').textContent = mmss(rem);
+    if(rem<=0){
+      clearInterval(gelTimerH); gelTimerH=null;
+      vibrate(400); beep(3);
+    }
+  }
+  function addGelIcs(){
+    const minutes=getAgaroseMinutes();
+    if(!minutes || !isFinite(minutes)) return;
+    const dt = new Date();
+    const pad=(x)=>String(x).padStart(2,'0');
+    const tz = dt.toISOString().match(/(\.\d+)?Z$/)?'Z':'';
+    const y=dt.getUTCFullYear(), m=pad(dt.getUTCMonth()+1), d=pad(dt.getUTCDate());
+    const hh=pad(dt.getUTCHours()), mm=pad(dt.getUTCMinutes()), ss=pad(dt.getUTCSeconds());
+    const durMin = Math.max(1, Math.round(minutes));
+    const ics = [
+      'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//LabCalc//JP//EN',
+      'BEGIN:VEVENT',
+      `UID:${Date.now()}@labcalc`,
+      `DTSTAMP:${y}${m}${d}T${hh}${mm}${ss}Z`,
+      `DTSTART:${y}${m}${d}T${hh}${mm}${ss}Z`,
+      `DURATION:PT${durMin}M`,
+      'SUMMARY:アガロース泳動タイマー',
+      'DESCRIPTION:LabCalc から作成',
+      'BEGIN:VALARM','TRIGGER:-PT1M','ACTION:DISPLAY','DESCRIPTION:まもなく終了','END:VALARM',
+      'END:VEVENT','END:VCALENDAR'
+    ].join('\r\n');
+    const blob=new Blob([ics],{type:'text/calendar'});
+    downloadBlob('agarose_timer.ics', blob);
   }
 
   // 別タブ：レシピ
@@ -1162,10 +1327,9 @@
     el.querySelectorAll('input[type=checkbox]').forEach(cb=>{
       cb.addEventListener('change', (e)=>{
         const k = e.target.getAttribute('data-k');
-        a = e.target.getAttribute('data-i'); // for debugging? (no; remove risk) – ignore
+        a = e.target.getAttribute('data-i');
       });
     });
-    // 正式保存（イベントを個別に設定）
     el.querySelectorAll('input[type=checkbox]').forEach(cb=>{
       cb.addEventListener('change', (e)=>{
         const k = e.target.getAttribute('data-k');
@@ -1239,3 +1403,4 @@
 </script>
 </body>
 </html>
+
