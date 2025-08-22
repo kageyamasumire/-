@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ラボ用 計算アプリ（プロトタイプ v0.19）</title>
+<title>ラボ用 計算アプリ（プロトタイプ v0.20）</title>
 <style>
   :root{ --panel-width: 420px; --panel-bg:#fff; --panel-border:#e6e6e6; --accent:#2f54eb; --muted:#666; }
   *{ box-sizing:border-box }
@@ -52,22 +52,23 @@
 <body>
   <div class="content">
     <h1>デモページ</h1>
-    <p class="desc">右に <strong>「ラボ用 計算アプリ（プロトタイプ v0.19）」</strong>。細胞数・アガロース・滅菌・試薬調整に加え、モル/希釈/分子量/単位換算なども搭載。</p>
+    <p class="desc">右に <strong>「ラボ用 計算アプリ（プロトタイプ v0.20）」</strong>。細胞数・アガロース・滅菌・試薬調整に加え、モル/希釈/分子量/単位換算、そして凍結・解凍・継代チェックリスト付き。</p>
   </div>
 
-  <aside class="right-panel" role="complementary" aria-label="ラボ用 計算アプリ（プロトタイプ v0.19）">
+  <aside class="right-panel" role="complementary" aria-label="ラボ用 計算アプリ（プロトタイプ v0.20）">
     <div class="panel-header">
-      <span class="badge">v0.19</span><div class="title">ラボ用 計算アプリ（プロトタイプ）</div>
+      <span class="badge">v0.20</span><div class="title">ラボ用 計算アプリ（プロトタイプ）</div>
     </div>
     <div class="tabs">
       <button class="tab-btn active" data-tab="cells">細胞数/生存率</button>
       <button class="tab-btn" data-tab="agarose">アガロースゲル</button>
-      <button class="tab-btn" data-tab="sterile">滅菌方法</button>
+      <button class="tab-btn" data-tab="sterile">滅菌</button>
       <button class="tab-btn" data-tab="reagents">細胞培養の試薬調整</button>
       <button class="tab-btn" data-tab="disposal">捨て方</button>
       <button class="tab-btn" data-tab="pcr">PCR</button>
       <button class="tab-btn" data-tab="culture">細胞培養</button>
       <button class="tab-btn" data-tab="lysis">細胞融解</button>
+      <button class="tab-btn" data-tab="passage">細胞継代</button>
       <button class="tab-btn" data-tab="recipes">ストック溶液レシピ</button>
 
       <!-- 追加ツール -->
@@ -254,133 +255,17 @@
         <div class="card"><h3>記録一覧</h3><div id="sterileTable" class="note">まだ記録がありません。</div></div>
       </section>
 
-      <!-- ===== 細胞培養の試薬調整 ===== -->
-      <section id="tab-reagents" style="display:none;">
-        <div class="card">
-          <h3>プリセットを選択</h3>
-          <div class="field"><div class="label">試薬</div>
-            <div>
-              <select id="reagPreset" style="width:auto;">
-                <optgroup label="培地">
-                  <option value="mem">MEM培地</option>
-                  <option value="rpmi">RPMI1640培地</option>
-                </optgroup>
-                <optgroup label="溶液（% w/v）">
-                  <option value="nahco3_10">10% NaHCO₃</option>
-                  <option value="gln_3">3% グルタミン</option>
-                  <option value="tb_0_4">0.4% トリパンブルー</option>
-                </optgroup>
-                <optgroup label="溶液（濃度指定）">
-                  <option value="strep_100mg">ストレプトマイシン 100 mg/mL</option>
-                  <option value="pen_100k">ペニシリン 100,000 U/mL</option>
-                </optgroup>
-                <optgroup label="配合（テキスト手順）">
-                  <option value="pbs1x">1× PBS(-)</option>
-                </optgroup>
-              </select>
-            </div>
-          </div>
-          <div id="reagGuide" class="note">プリセットを選ぶと下の計算ツールに自動入力します。メーカーの添付文書/SOPを最優先してください。</div>
-        </div>
-
-        <div class="card">
-          <h3>計算ツール</h3>
-          <div class="field">
-            <div class="label">最終体積 V<sub>2</sub></div>
-            <div>
-              <input type="number" id="V2" value="100"><span class="suffix">mL</span>
-              <button class="btn" onclick="setV2(100)">100 mL</button>
-              <button class="btn" onclick="setV2(500)">500 mL</button>
-            </div>
-          </div>
-
-          <div class="card" style="margin:8px 0;">
-            <h3>1) C1V1＝C2V2（mg/mL・U/mLなど）</h3>
-            <div class="field"><div class="label">C<sub>1</sub>（ストック濃度）</div><div><input type="number" id="C1" step="0.001"><select id="unitC" style="width:auto;"><option>mg/mL</option><option>µg/mL</option><option>U/mL</option></select></div></div>
-            <div class="field"><div class="label">C<sub>2</sub>（最終濃度）</div><div><input type="number" id="C2" step="0.001"><span class="suffix" id="unitC2">（同上）</span></div></div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn" onclick="calcC1V1()">計算</button><button class="btn" onclick="fillFromPreset()">プリセット値を反映</button></div>
-            <div class="row"><div class="label">必要なストック量 V<sub>1</sub></div><div class="value" id="r_v1">— mL</div></div>
-            <div class="row"><div class="label">希釈溶媒（V<sub>2</sub>−V<sub>1</sub>）</div><div class="value" id="r_dil">— mL</div></div>
-          </div>
-
-          <div class="card" style="margin:8px 0;">
-            <h3>2) % w/v 溶液</h3>
-            <div class="field"><div class="label">濃度（%）</div><div><input type="number" id="pct" step="0.01"></div></div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn" onclick="calcPercent()">計算</button><button class="btn" onclick="fillFromPreset()">プリセット値を反映</button></div>
-            <div class="row"><div class="label">秤量する固形物</div><div class="value" id="r_grams">— g（定容で — mL）</div></div>
-          </div>
-
-          <div class="card" style="margin:8px 0;">
-            <h3>3) X 倍濃度ストック → 最終</h3>
-            <div class="field"><div class="label">ストック倍率</div><div><input type="number" id="stockFactor" value="10"><span class="suffix">×</span></div></div>
-            <div class="field"><div class="label">最終倍率</div><div><input type="number" id="finalFactor" value="1"><span class="suffix">×</span></div></div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn" onclick="calcFactor()">計算</button><button class="btn" onclick="fillFromPreset()">プリセット値を反映</button></div>
-            <div class="row"><div class="label">必要なストック量</div><div class="value" id="r_fx_v1">— mL</div></div>
-            <div class="row"><div class="label">希釈溶媒</div><div class="value" id="r_fx_dil">— mL</div></div>
-          </div>
-
-          <div class="danger" id="reagWarn" style="display:none;">注意：入力に不整合があります（C1=0 または V1>V2 など）。単位と値を確認してください。</div>
-        </div>
-
-        <div class="card">
-          <h3>備考（自由記入）</h3>
-          <textarea id="reagNote" rows="3" placeholder="例：0.22 µmろ過、1 mLずつ分注して-20°C保存 など"></textarea>
-        </div>
-
-        <div class="card">
-          <h3>プリセット表（編集可・印刷向け）</h3>
-          <div id="reagTable" class="note">初期化中…</div>
-        </div>
-      </section>
-
-      <!-- ===== 捨て方 / PCR / Culture / Lysis / Recipes ===== -->
-      <section id="tab-disposal" style="display:none;">
-        <div class="card"><h3>SOP / 参考リンク</h3><div class="field"><div class="label">URLまたはメモ</div><div><input type="text" id="dispSOP" placeholder="例: 学内規程URL"></div></div><div class="note">区分や容器は所属ラボ規程に合わせてください。</div></div>
-        <div class="card">
-          <h3>チェックリスト（高レベル）</h3>
-          <div><label><input type="checkbox" class="disp-cb"> 区分確認（一般/シャープス/有機/酸アルカリ/特定物質 等）</label></div>
-          <div><label><input type="checkbox" class="disp-cb"> 容器・ラベル・二次容器の確認</label></div>
-          <div><label><input type="checkbox" class="disp-cb"> 保管/回収手配</label></div>
-          <div><label><input type="checkbox" class="disp-cb"> 記録（重量・本数・担当・日付）</label></div>
-          <div style="margin-top:8px;"><button class="btn btn-ghost" onclick="clearChecklist('disp-cb')">全クリア</button></div>
-        </div>
-        <div class="card">
-          <h3>記録フォーム</h3>
-          <div class="field"><div class="label">区分</div><div><select id="dispType"><option>一般</option><option>シャープス</option><option>有機溶媒廃液</option><option>酸/アルカリ廃液</option><option>エチジウム含有</option><option>その他</option></select></div></div>
-          <div class="field"><div class="label">容器/本数（任意）</div><div><input type="text" id="dispQty" placeholder="例: 20L缶×1"></div></div>
-          <div class="field"><div class="label">担当</div><div><input type="text" id="dispWho"></div></div>
-          <div class="field"><div class="label">日付</div><div><input type="date" id="dispDate"></div></div>
-          <div class="field"><div class="label">メモ</div><div><input type="text" id="dispNote"></div></div>
-          <div style="display:flex;gap:8px;"><button class="btn btn-primary" onclick="dispAdd()">追加</button><button class="btn" onclick="dispExport()">CSVエクスポート</button></div>
-        </div>
-        <div class="card"><h3>記録一覧</h3><div id="dispTable" class="note">まだ記録がありません。</div></div>
-      </section>
-
-      <section id="tab-pcr" style="display:none;">
-        <div class="card"><h3>SOP / 参考リンク</h3><div class="field"><div class="label">URLまたはメモ</div><div><input type="text" id="pcrSOP" placeholder="例: PCR標準操作手順"></div></div><div class="note">具体条件は所属ラボSOPに従ってください。</div></div>
-        <div class="card">
-          <h3>チェックリスト（高レベル）</h3>
-          <div><label><input type="checkbox" class="pcr-cb"> 前準備（分注・テンプレ・プライマー）</label></div>
-          <div><label><input type="checkbox" class="pcr-cb"> 反応セットアップ（汚染防止・陰性/陽性対照）</label></div>
-          <div><label><input type="checkbox" class="pcr-cb"> サイクル設定・実行</label></div>
-          <div><label><input type="checkbox" class="pcr-cb"> 解析（電気泳動/解釈）</label></div>
-          <div><label><input type="checkbox" class="pcr-cb"> 記録・片付け</label></div>
-          <div style="margin-top:8px;"><button class="btn btn-ghost" onclick="clearChecklist('pcr-cb')">全クリア</button></div>
-        </div>
-        <div class="card">
-          <h3>記録フォーム</h3>
-          <div class="field"><div class="label">ラン名/目的</div><div><input type="text" id="pcrRun"></div></div>
-          <div class="field"><div class="label">サンプル数（任意）</div><div><input type="number" id="pcrN" step="1"></div></div>
-          <div class="field"><div class="label">担当</div><div><input type="text" id="pcrWho"></div></div>
-          <div class="field"><div class="label">日付</div><div><input type="date" id="pcrDate"></div></div>
-          <div class="field"><div class="label">メモ</div><div><input type="text" id="pcrNote"></div></div>
-          <div style="display:flex;gap:8px;"><button class="btn btn-primary" onclick="pcrAdd()">追加</button><button class="btn" onclick="pcrExport()">CSVエクスポート</button></div>
-        </div>
-        <div class="card"><h3>記録一覧</h3><div id="pcrTable" class="note">まだ記録がありません。</div></div>
-      </section>
-
+      <!-- ===== 細胞培養（凍結保存もここに） ===== -->
       <section id="tab-culture" style="display:none;">
         <div class="card"><h3>SOP / 参考リンク</h3><div class="field"><div class="label">URLまたはメモ</div><div><input type="text" id="cultSOP" placeholder="例: 継代SOP / 播種SOP"></div></div><div class="note">具体条件はSOPに準拠。ここでは作業ログのみ扱います。</div></div>
+
+        <div class="card">
+          <h3>細胞の凍結保存（手順ガイド）</h3>
+          <div class="note">※ 画像マニュアル準拠の目安フロー。具体条件は所属ラボSOPを最優先。</div>
+          <div style="margin:6px 0;"><button class="btn" onclick="goTab('cells')">細胞数ツールを開く</button></div>
+          <div id="freezeSteps">読み込み中…</div>
+        </div>
+
         <div class="card">
           <h3>チェックリスト（高レベル）</h3>
           <div><label><input type="checkbox" class="cult-cb"> 作業前準備（安全/清拭/器具確認）</label></div>
@@ -389,6 +274,7 @@
           <div><label><input type="checkbox" class="cult-cb"> 片付け・記録</label></div>
           <div style="margin-top:8px;"><button class="btn btn-ghost" onclick="clearChecklist('cult-cb')">全クリア</button></div>
         </div>
+
         <div class="card">
           <h3>記録フォーム</h3>
           <div class="field"><div class="label">株名/セルライン</div><div><input type="text" id="cultCell"></div></div>
@@ -402,7 +288,15 @@
         <div class="card"><h3>記録一覧</h3><div id="cultTable" class="note">まだ記録がありません。</div></div>
       </section>
 
+      <!-- ===== 細胞融解（解凍→再培養ガイドもここに） ===== -->
       <section id="tab-lysis" style="display:none;">
+        <div class="card">
+          <h3>凍結細胞の解凍と再培養（手順ガイド）</h3>
+          <div class="note">※ 画像マニュアル準拠の目安フロー。具体条件は所属ラボSOPを最優先。</div>
+          <div style="margin:6px 0;"><button class="btn" onclick="goTab('cells')">細胞数ツールを開く</button></div>
+          <div id="thawSteps">読み込み中…</div>
+        </div>
+
         <div class="card"><h3>SOP / 参考リンク</h3><div class="field"><div class="label">URLまたはメモ</div><div><input type="text" id="lysisSOP" placeholder="例: 化学的/物理的融解のSOP"></div></div><div class="note">具体条件はラボSOPを参照。本シートは方法種別の記録・チェックのみです。</div></div>
         <div class="card">
           <h3>チェックリスト（高レベル）</h3>
@@ -425,6 +319,29 @@
         <div class="card"><h3>記録一覧</h3><div id="lysisTable" class="note">まだ記録がありません。</div></div>
       </section>
 
+      <!-- ===== 細胞継代（新規） ===== -->
+      <section id="tab-passage" style="display:none;">
+        <div class="card">
+          <h3>細胞の継代（手順ガイド）</h3>
+          <div class="note">※ 画像マニュアル準拠の目安フロー。具体条件は所属ラボSOPを最優先。</div>
+          <div style="margin:6px 0;"><button class="btn" onclick="goTab('cells')">細胞数ツールを開く</button></div>
+          <div id="passageSteps">読み込み中…</div>
+        </div>
+
+        <div class="card">
+          <h3>継代ログ</h3>
+          <div class="field"><div class="label">セルライン</div><div><input type="text" id="passCell"></div></div>
+          <div class="field"><div class="label">パッセージ</div><div><input type="text" id="passPsg" placeholder="例: P12"></div></div>
+          <div class="field"><div class="label">担当</div><div><input type="text" id="passWho"></div></div>
+          <div class="field"><div class="label">日付</div><div><input type="date" id="passDate"></div></div>
+          <div class="field"><div class="label">メモ</div><div><input type="text" id="passNote" placeholder="播種量/容器等"></div></div>
+          <div style="display:flex;gap:8px;"><button class="btn btn-primary" onclick="passAdd()">追加</button><button class="btn" onclick="passExport()">CSVエクスポート</button></div>
+        </div>
+
+        <div class="card"><h3>記録一覧</h3><div id="passTable" class="note">まだ記録がありません。</div></div>
+      </section>
+
+      <!-- ===== レシピ ===== -->
       <section id="tab-recipes" style="display:none;">
         <div class="card">
           <h3>バッファーのストック溶液レシピ</h3>
@@ -435,8 +352,7 @@
         <div class="card" id="recipeOut"><div class="note">上の「計算」を押してください。</div></div>
       </section>
 
-      <!-- ===== 追加ツール ===== -->
-      <!-- モル計算 -->
+      <!-- ===== 追加ツール（モル等） ===== -->
       <section id="tab-mol" style="display:none;">
         <div class="card"><h3>入力</h3>
           <div class="field"><div class="label">分子量（MW）</div><div><input type="number" id="mol_mw" step="0.0001"><span class="suffix">g/mol</span></div></div>
@@ -452,7 +368,6 @@
         </div>
       </section>
 
-      <!-- 希釈計算 -->
       <section id="tab-dilution" style="display:none;">
         <div class="card"><h3>C1V1＝C2V2</h3>
           <div class="field"><div class="label">C1</div><div><input type="number" id="dil_C1" step="0.0001"><span class="suffix">（任意単位）</span></div></div>
@@ -468,7 +383,6 @@
         </div>
       </section>
 
-      <!-- 化学式量 -->
       <section id="tab-mw" style="display:none;">
         <div class="card"><h3>化学式 → 分子量（括弧OK）</h3>
           <div class="field"><div class="label">化学式</div><div><input type="text" id="mw_formula" placeholder="例: Na2HPO4·12H2O, (NH4)2SO4"></div></div>
@@ -480,14 +394,12 @@
         </div>
       </section>
 
-      <!-- 容器データ -->
       <section id="tab-vessels" style="display:none;">
         <div class="card"><h3>代表的な培養容器（目安）</h3>
           <div id="vessels_table" class="note">読み込み中…</div>
         </div>
       </section>
 
-      <!-- 単位換算 -->
       <section id="tab-units" style="display:none;">
         <div class="card"><h3>体積・質量・濃度</h3>
           <div class="field"><div class="label">カテゴリ</div><div>
@@ -502,7 +414,6 @@
         </div>
       </section>
 
-      <!-- 培地変換 -->
       <section id="tab-mediax" style="display:none;">
         <div class="card"><h3>%w/v ⇄ mg/mL / g/L</h3>
           <div class="field"><div class="label">濃度（% w/v）</div><div><input type="number" id="mx_pct" step="0.001"></div></div>
@@ -522,7 +433,6 @@
         </div>
       </section>
 
-      <!-- 抗体生産性 -->
       <section id="tab-antibody" style="display:none;">
         <div class="card"><h3>入力</h3>
           <div class="field"><div class="label">力価（titer）</div><div><input type="number" id="ab_titer" step="0.0001"><span class="suffix">mg/L</span></div></div>
@@ -539,7 +449,6 @@
         <div class="note">qP = titer / IVCD（単位整合で <em>pg/cell/day</em> に簡約）。IVCDが未入力なら「平均VCD×日数」で自動計算します。</div>
       </section>
 
-      <!-- トランスフィクション -->
       <section id="tab-transfect" style="display:none;">
         <div class="card"><h3>設定</h3>
           <div class="field"><div class="label">ウェル数</div><div><input type="number" id="tx_wells" value="6" step="1"></div></div>
@@ -556,7 +465,6 @@
         <div class="note">例：DNA 1 µg/ウェル、比 3 → 試薬 3 µL/ウェル。DNA原液 1 µg/µL なら DNA体積 1 µL/ウェル。</div>
       </section>
 
-      <!-- テスト -->
       <section id="tab-tests" style="display:none;">
         <div class="card"><h3>開発者テスト</h3><button class="btn" onclick="runTests()">Run Tests</button><ul id="testsOut"></ul></div>
       </section>
@@ -943,12 +851,12 @@
   function calcC1V1(){
     const C1=n(document.getElementById('C1').value), C2=n(document.getElementById('C2').value), V2=n(document.getElementById('V2').value);
     const warn = document.getElementById('reagWarn');
-    if(C1<=0 || V2<=0){ document.getElementById('r_v1').textContent='— mL'; document.getElementById('r_dil').textContent='— mL'; warn.style.display='block'; return; }
+    if(C1<=0 || V2<=0){ document.getElementById('r_v1').textContent='— mL'; document.getElementById('r_dil').textContent='— mL'; if(warn) warn.style.display='block'; return; }
     const V1 = (C2*V2)/C1;
     const dil = V2 - V1;
     document.getElementById('r_v1').textContent = (V1<0||!isFinite(V1))?'— mL':fmt(V1,3)+' mL';
     document.getElementById('r_dil').textContent = (dil<0||!isFinite(dil))?'— mL':fmt(dil,3)+' mL';
-    warn.style.display = (V1<0 || dil<0)?'block':'none';
+    if(warn) warn.style.display = (V1<0 || dil<0)?'block':'none';
   }
   function calcPercent(){
     const pct=n(document.getElementById('pct').value);
@@ -962,22 +870,21 @@
     const finalX=n(document.getElementById('finalFactor').value);
     const V2=n(document.getElementById('V2').value);
     const warn = document.getElementById('reagWarn');
-    if(stockX<=0 || finalX<=0 || V2<=0){ document.getElementById('r_fx_v1').textContent='— mL'; document.getElementById('r_fx_dil').textContent='— mL'; warn.style.display='block'; return; }
+    if(stockX<=0 || finalX<=0 || V2<=0){ document.getElementById('r_fx_v1').textContent='— mL'; document.getElementById('r_fx_dil').textContent='— mL'; if(warn) warn.style.display='block'; return; }
     const V1 = V2*(finalX/stockX);
     const dil = V2 - V1;
     document.getElementById('r_fx_v1').textContent=fmt(V1,3)+' mL';
     document.getElementById('r_fx_dil').textContent=fmt(dil,3)+' mL';
-    warn.style.display = (V1<0 || dil<0)?'block':'none';
+    if(warn) warn.style.display = (V1<0 || dil<0)?'block':'none';
   }
 
   // ===== 追加ツールのロジック =====
   const _n = v => { const x = Number(v); return Number.isFinite(x)?x:0; };
 
-  // 1) モル計算
   function calcMol(){
     const MW=_n(document.getElementById('mol_mw').value);
     const mass=_n(document.getElementById('mol_mass').value);
-    const vol=_n(document.getElementById('mol_vol').value); // mL
+    const vol=_n(document.getElementById('mol_vol').value);
     const targetM=_n(document.getElementById('mol_targetM').value);
 
     const n_mol = (MW>0 && mass>0)? (mass/MW) : 0;
@@ -989,7 +896,6 @@
     document.getElementById('mol_need').textContent = (need? need.toFixed(4)+' g':'— g');
   }
 
-  // 2) 希釈計算
   function calcDilution(){
     const C1=_n(document.getElementById('dil_C1').value);
     const C2=_n(document.getElementById('dil_C2').value);
@@ -1003,14 +909,12 @@
     warn.style.display = (V1<0 || dil<0)?'block':'none';
   }
 
-  // 3) 化学式量
   const AW = {H:1.00794, He:4.0026, Li:6.94, Be:9.0122, B:10.811, C:12.011, N:14.0067, O:15.999, F:18.998, Na:22.9898, Mg:24.305, Al:26.9815, Si:28.0855, P:30.9738, S:32.065, Cl:35.453, K:39.0983, Ca:40.078, Mn:54.938, Fe:55.845, Co:58.933, Ni:58.693, Cu:63.546, Zn:65.38, Se:78.971, Br:79.904, Ag:107.868, I:126.9045, Ba:137.327 };
   function calcMW(){
-    const f = (document.getElementById('mw_formula').value||'').replace(/·/g,'+'); // hydrate dot
+    const f = (document.getElementById('mw_formula').value||'').replace(/·/g,'+');
     const mass = parseFormulaMass(f);
     document.getElementById('mw_out').textContent = mass? mass.toFixed(4)+' g/mol':'— g/mol';
   }
-  // 式パーサ（括弧と係数、和水和）: 例 "(NH4)2SO4+12H2O"
   function parseFormulaMass(s){
     let i=0;
     function readNum(){ let m=''; while(i<s.length && /[0-9.]/.test(s[i])) m+=s[i++]; return m?parseFloat(m):1; }
@@ -1028,14 +932,13 @@
           total += (AW[sym]||0)*mult;
           continue;
         }
-        i++; // 不明文字はスキップ
+        i++;
       }
       return total;
     }
     return segment();
   }
 
-  // 4) 容器データ
   const VESSELS = [
     {容器:'T-25 フラスコ', 面積:'25', 推奨液量:'5–7'},
     {容器:'T-75 フラスコ', 面積:'75', 推奨液量:'10–15'},
@@ -1055,11 +958,10 @@
     html+='</tbody></table>'; el.innerHTML=html;
   })();
 
-  // 5) 単位換算
   const UNITS = {
     vol:{ base:'L', list:{'µL':1e-6,'mL':1e-3,'L':1} },
     mass:{ base:'g', list:{'mg':1e-3,'g':1,'kg':1e3} },
-    conc:{ base:'mg/mL', list:{'mg/mL':1,'g/L':1/1, '% w/v':10} } // 1% ≈ 10 mg/mL
+    conc:{ base:'mg/mL', list:{'mg/mL':1,'g/L':1/1, '% w/v':10} }
   };
   function fillUnitOptions(){
     const cat=document.getElementById('u_cat')?.value||'vol';
@@ -1084,12 +986,11 @@
     document.getElementById('u_out').textContent = res.toLocaleString(undefined,{maximumFractionDigits:6})+' '+to;
   }
 
-  // 6) 培地変換
   function calcMediaPercent(){
     const pct=_n(document.getElementById('mx_pct').value), V=_n(document.getElementById('mx_vol').value);
     const g = (pct/100)*V;
-    const mgml = pct*10; // 1% ≈ 10 mg/mL
-    const gl = pct*10;   // 1% = 10 g/L
+    const mgml = pct*10;
+    const gl = pct*10;
     document.getElementById('mx_g').textContent = g? g.toFixed(4)+' g':'— g';
     document.getElementById('mx_mgml').textContent = mgml? mgml.toFixed(3)+' mg/mL':'— mg/mL';
     document.getElementById('mx_gl').textContent = gl? gl.toFixed(3)+' g/L':'— g/L';
@@ -1102,24 +1003,22 @@
     document.getElementById('mx_dil').textContent=dil.toFixed(3)+' mL';
   }
 
-  // 7) 抗体生産性
   function calcAntibody(){
     const t=_n(document.getElementById('ab_titer').value), L=_n(document.getElementById('ab_vol').value);
     let ivcd=_n(document.getElementById('ab_ivcd').value);
     const avg=_n(document.getElementById('ab_avgvcd').value), days=_n(document.getElementById('ab_days').value);
-    if(!ivcd && avg && days) ivcd = avg*days; // (10^6 cell·day/mL)
-    const total = t*L; // mg
-    const qp = (ivcd>0)? (t/ivcd) : 0; // pg/cell/day に簡約
+    if(!ivcd && avg && days) ivcd = avg*days;
+    const total = t*L;
+    const qp = (ivcd>0)? (t/ivcd) : 0;
     document.getElementById('ab_total').textContent = total? total.toFixed(3)+' mg':'— mg';
     document.getElementById('ab_qp').textContent = qp? qp.toFixed(3)+' pg/cell/day':'— pg/cell/day';
   }
 
-  // 8) トランスフィクション
   function calcTransfect(){
     const wells=_n(document.getElementById('tx_wells').value), dnaPer=_n(document.getElementById('tx_dna_per').value), ratio=_n(document.getElementById('tx_ratio').value), stock=_n(document.getElementById('tx_stock').value);
-    const vDNA_per = stock>0? dnaPer/stock : 0;             // µL / well
-    const vReag_per = dnaPer*ratio;                         // µL / well（比）
-    const vMix_per = (vDNA_per + vReag_per);                // µL / well（1:1希釈前）
+    const vDNA_per = stock>0? dnaPer/stock : 0;
+    const vReag_per = dnaPer*ratio;
+    const vMix_per = (vDNA_per + vReag_per);
     const vDNA_all = vDNA_per*wells, vReag_all = vReag_per*wells, vMix_all=vMix_per*wells;
     document.getElementById('tx_v_dna').textContent = (vDNA_per?vDNA_per.toFixed(2):'—')+' µL / '+(vDNA_all?vDNA_all.toFixed(2):'—')+' µL';
     document.getElementById('tx_v_reag').textContent = (vReag_per?vReag_per.toFixed(2):'—')+' µL / '+(vReag_all?vReag_all.toFixed(2):'—')+' µL';
@@ -1162,23 +1061,131 @@
   }
   function lysisExport(){ const rows = JSON.parse(localStorage.getItem('lysisRows')||'[]'); downloadCSV('lysis_log.csv', rows); }
 
+  // ==== v0.20 追加：SOPチェックリスト ====
+  const SOP_STEPS = {
+    freeze: [
+      '培養液を吸引除去',
+      'PBS(-) 3 mL を静かに加え、培養表面を洗浄 → 吸引除去',
+      'トリプシン 2 mL を加え、室温放置（顕微鏡で剥離を観察）',
+      '大部分が球状になったら培地 2 mL を加えて反応停止、ピペッティングで懸濁',
+      '細胞浮遊液 4 mL を 15 mL 遠沈管に移す（必要なら追加分も）',
+      '細胞計数（必要ならトリパンブルー1:1混合→計測）',
+      '遠心 190–200 g（約1,000 rpm）3 分 → 上清除去、ペレットを軽くほぐす',
+      '算出体積の氷冷「凍結用培地（DMSO含有）」で懸濁（例：1×10^6 cells/mL で 1 mL/バイアル）',
+      'ラベル済み凍結用バイアルに 1 mL ずつ分注（必要本数）',
+      '凍結用断熱容器→ -80℃、のち液体窒素保管（ラボSOPに従う）',
+      '記録：細胞名、継代数、日付、氏名、本数、濃度'
+    ],
+    thaw: [
+      '15 mL コニカルに培地 9 mL を準備（温めた培地推奨）',
+      '凍結バイアルを素早く解凍（37℃ウォーターバス等、キャップ水没させない）',
+      '細胞浮遊液（~1 mL）を培地 9 mL の管へゆっくり移す（DMSO急性毒性回避）',
+      '遠心 190–200 g（約1,000 rpm）3 分 → 上清除去、ペレットをタッピングでほぐす',
+      '培地 1 mL でピペッティングして懸濁（0.1 mL を別取りして計数用に保持）',
+      '細胞計数と生存率の確認（トリパンブルー 1:1 など）',
+      '必要濃度・液量を計算して調製（例：4×10^4 cells/mL を 16 mL 作成 ⇒ 細胞液 DD mL + 培地 (16−DD) mL）',
+      '播種：10 cm 皿に 10 mL、T-25 に 5 mL など、容器に均一に分配',
+      '顕微鏡で状態を確認し、CO₂インキュベータへ',
+      '記録：セルライン、容器、播種細胞数/濃度、担当、日付'
+    ],
+    passage: [
+      '培養液を吸引除去',
+      'PBS(-) 3 mL を静かに加え洗浄 → 吸引除去',
+      'トリプシン 2 mL を加え、室温で剥離を観察',
+      '剥離後、培地 2 mL を加え反応停止、ピペッティングで均一化',
+      '細胞浮遊液を 15 mL 遠沈管へ移す',
+      '遠心 190–200 g（約1,000 rpm）3 分',
+      '上清を吸引除去し、ペレットをタッピングでほぐす',
+      '培地 2 mL でピペッティング（0.2 mL を計数用に取り別け、残りは氷上）',
+      '細胞計数・必要液量の計算（例：1×10^6 cells/mL に調整、容器に応じ総量5 mL など）',
+      '播種：T-25 へ 5 mL、またはディッシュ等へ均一化して分注',
+      '顕微鏡で状態確認 → CO₂インキュベータへ',
+      '記録：セルライン、P数、分割比、播種量、担当、日付'
+    ]
+  };
+
+  function renderSOP(containerId, steps, storeKey){
+    const el = document.getElementById(containerId);
+    if(!el) return;
+    const saved = JSON.parse(localStorage.getItem(storeKey) || '[]');
+    let html = '<ol style="padding-left:20px;margin:8px 0">';
+    steps.forEach((s, i)=>{
+      const checked = saved[i] ? 'checked' : '';
+      html += `<li style="margin:6px 0;"><label><input type="checkbox" data-k="${storeKey}" data-i="${i}" ${checked}> ${s}</label></li>`;
+    });
+    html += '</ol><div style="display:flex;gap:8px;flex-wrap:wrap;">'
+         +  `<button class="btn" onclick="sopCheckAll('${storeKey}', true)">すべてチェック</button>`
+         +  `<button class="btn" onclick="sopCheckAll('${storeKey}', false)">全クリア</button>`
+         +  `<button class="btn" onclick="sopExport('${storeKey}')">CSVエクスポート</button>`
+         +  '</div>';
+    el.innerHTML = html;
+
+    el.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+      cb.addEventListener('change', (e)=>{
+        const k = e.target.getAttribute('data-k');
+        const i = Number(e.target.getAttribute('data-i'));
+        const arr = JSON.parse(localStorage.getItem(k) || '[]');
+        arr[i] = e.target.checked;
+        localStorage.setItem(k, JSON.stringify(arr));
+      });
+    });
+  }
+  function sopCheckAll(storeKey, on){
+    const len = storeKey==='sop_freeze'?SOP_STEPS.freeze.length:
+                storeKey==='sop_thaw'?SOP_STEPS.thaw.length:
+                SOP_STEPS.passage.length;
+    const v = Array(len).fill(on);
+    localStorage.setItem(storeKey, JSON.stringify(v));
+    if(storeKey==='sop_freeze') renderSOP('freezeSteps', SOP_STEPS.freeze, 'sop_freeze');
+    if(storeKey==='sop_thaw')   renderSOP('thawSteps',   SOP_STEPS.thaw,   'sop_thaw');
+    if(storeKey==='sop_pass')   renderSOP('passageSteps',SOP_STEPS.passage,'sop_pass');
+  }
+  function sopExport(storeKey){
+    const map = {
+      'sop_freeze': {title:'freeze', steps:SOP_STEPS.freeze},
+      'sop_thaw':   {title:'thaw',   steps:SOP_STEPS.thaw},
+      'sop_pass':   {title:'passage',steps:SOP_STEPS.passage}
+    };
+    const {title, steps} = map[storeKey] || map['sop_freeze'];
+    const flags = JSON.parse(localStorage.getItem(storeKey)||'[]');
+    const rows = steps.map((s,i)=>({ step:i+1, done:flags[i]?'✔':'', text:s }));
+    downloadCSV(`SOP_${title}.csv`, rows);
+  }
+  function goTab(name){
+    const btn = document.querySelector(`.tab-btn[data-tab="${name}"]`);
+    if(btn){ btn.click(); }
+  }
+
+  // 継代ログ
+  function passAdd(){
+    const rows = JSON.parse(localStorage.getItem('passRows')||'[]');
+    rows.push({
+      セルライン:document.getElementById('passCell').value||'',
+      パッセージ:document.getElementById('passPsg').value||'',
+      担当:document.getElementById('passWho').value||'',
+      日付:document.getElementById('passDate').value||'',
+      メモ:document.getElementById('passNote').value||'',
+    });
+    localStorage.setItem('passRows', JSON.stringify(rows));
+    renderTable(document.getElementById('passTable'), rows);
+  }
+  function passExport(){
+    const rows = JSON.parse(localStorage.getItem('passRows')||'[]');
+    downloadCSV('passage_log.csv', rows);
+  }
+
   // ==== テスト ====
   function testsPush(list,name,pass){ list.push({name,pass}); }
   function runTests(){
     const results=[];
-    // Cells
     { const DF=(50+50)/50, liveAvg=120/4, totalAvg=(120+30)/4, live=liveAvg*DF*1e4, total=totalAvg*DF*1e4; testsPush(results,'Cells 基本', live===600000 && total===750000); }
-    // Agarose
     { const g=(1.5/100)*30; testsPush(results,'Gel 秤量 1.5%/30mL=0.45g', Math.abs(g-0.45)<1e-9); }
     { const s=30/50; testsPush(results,'50×→1× 30mL=0.6mL', Math.abs(s-0.6)<1e-9); }
     { const V=10*10, t=8/(10*0.02); testsPush(results,'電圧100V/時間40分', Math.abs(V-100)<1e-9 && Math.abs(t-40)<1e-9); }
-    // Reagents
     { const g2=0.94/100*500; testsPush(results,'MEM 0.94% / 500mL = 4.7g', Math.abs(g2-4.7)<1e-9); }
     { const g3=1.02/100*100; testsPush(results,'RPMI 1.02% / 100mL = 1.02g', Math.abs(g3-1.02)<1e-9); }
     { const Vx=500*(1/10); testsPush(results,'X希釈: 10×→1× 500mLで50mL', Math.abs(Vx-50)<1e-9); }
-    // MW
     { const mw = parseFormulaMass('NaCl'); testsPush(results,'化学式量 NaCl≈58.44', Math.abs(mw-58.44)<0.2); }
-    // Dilution
     { const C1=10, C2=1, V2=10, V1=(C2*V2)/C1; testsPush(results,'希釈 10→1, 10mL ⇒ V1=1mL', Math.abs(V1-1)<1e-9); }
 
     const ul=document.getElementById('testsOut'); ul.innerHTML='';
@@ -1189,12 +1196,16 @@
   function init(){
     sterileInitCatalog();
     renderReagTable();
-    document.getElementById('reagPreset').value='mem';
-    document.getElementById('reagPreset').dispatchEvent(new Event('change'));
+    const sel=document.getElementById('reagPreset'); if(sel){ sel.value='mem'; sel.dispatchEvent(new Event('change')); }
     calcCells();
     calcAgarose();
     drawGelCanvas(document.getElementById('travel').value || 0, document.getElementById('gelPct').value || NaN);
     fillUnitOptions();
+
+    // v0.20: SOPチェックリスト描画
+    renderSOP('freezeSteps',  SOP_STEPS.freeze,  'sop_freeze');
+    renderSOP('thawSteps',    SOP_STEPS.thaw,    'sop_thaw');
+    renderSOP('passageSteps', SOP_STEPS.passage, 'sop_pass');
   }
   init();
 </script>
