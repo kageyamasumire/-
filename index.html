@@ -1,34 +1,554 @@
-<script>
-/* === 倍化（週プラン）：曜日ベース／日付なし === */
-(function(){
-  const WN = ['月','火','水','木','金','土','日'];
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>だれでもわかる 細胞培養 計画・手順アプリ v0.30</title>
+<style>
+  :root{ --panel-width: 420px; --panel-bg:#fff; --panel-border:#e6e6e6; --accent:#2f54eb; --muted:#666; }
+  *{ box-sizing:border-box }
+  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif; background:#f7f8fa; color:#111; }
+  .content{ padding:24px; max-width:860px; }
+  h1{ margin:0 0 12px; font-size:22px }
+  .desc{ color:var(--muted); margin-bottom:24px }
+  .right-panel{ position:fixed; top:0; right:0; width:var(--panel-width); height:100vh; background:#fff; border-left:1px solid var(--panel-border); box-shadow:-6px 0 20px rgba(0,0,0,.06); display:flex; flex-direction:column; z-index:9999 }
+  .panel-header{ padding:14px 16px; border-bottom:1px solid var(--panel-border); display:flex; align-items:center; gap:10px }
+  .badge{ font-size:12px; color:#fff; background:var(--accent); padding:2px 8px; border-radius:999px }
+  .title{ font-size:14px; font-weight:600 }
+  .tabs{ display:flex; gap:8px; padding:10px 12px; border-bottom:1px solid var(--panel-border); flex-wrap:wrap }
+  .tab-btn{ padding:8px 12px; border:1px solid #d9d9d9; border-radius:10px; background:#fff; cursor:pointer; transition:.15s }
+  .tab-btn.active{ background:#f0f5ff; border-color:#adc6ff }
+  .panel-body{ padding:16px; overflow:auto; flex:1 }
+  .card{ border:1px solid var(--panel-border); border-radius:12px; background:#fff; padding:14px; margin-bottom:12px }
+  .card h3{ margin:0 0 8px; font-size:15px }
+  .row{ display:grid; grid-template-columns:1fr auto; gap:8px; padding:6px 0; border-bottom:1px dotted #eee }
+  .row:last-child{ border-bottom:0 }
+  .label{ color:#333 }
+  .value{ color:#111; font-variant-numeric:tabular-nums; white-space:nowrap }
+  .field{ display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; margin-bottom:10px }
+  .field input[type=number], .field input[type=text], .field input[type=date], .field select{ width:180px; padding:8px 10px; border-radius:8px; border:1px solid #ddd; background:#fff; text-align:right }
+  .field input[type=text]{ text-align:left }
+  .suffix{ color:#666; font-size:12px; margin-left:6px }
+  .btn{ display:inline-block; background:#fff; border:1px solid #d9d9d9; border-radius:10px; padding:8px 12px; cursor:pointer; transition:.15s }
+  .btn:hover{ border-color:#bfbfbf }
+  .btn-primary{ background:#2f54eb; color:#fff; border-color:transparent }
+  .btn-ghost{ background:#fff; color:#2f54eb; border-color:#adc6ff }
+  .note{ font-size:12px; color:#666 }
+  .warn{ margin-top:8px; padding:8px; background:#fff7e6; border:1px solid #ffe7ba; color:#ad4e00; border-radius:8px }
+  .danger{ margin-top:8px; padding:8px; background:#fff1f0; border:1px solid #ffccc7; color:#a8071a; border-radius:8px }
+  textarea{ width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; font-family:inherit }
+  table{ width:100%; border-collapse:collapse; font-size:12px }
+  th,td{ border-bottom:1px solid #f0f0f0; text-align:left; padding:6px 4px }
+  th{ color:#555; font-weight:600 }
+  @media (max-width:980px){ .right-panel{ width:100% } }
+  @media print{
+    body{ background:#fff }
+    .content, .tabs, .panel-header{ display:none }
+    .right-panel{ position:static; width:auto; height:auto; box-shadow:none; border:none }
+    .card{ break-inside:avoid }
+  }
+</style>
+</head>
+<body>
+  <div class="content">
+    <h1>デモページ</h1>
+    <p class="desc">右に <strong>「だれでもわかる 細胞培養 計画・手順アプリ v0.30」</strong>。細胞数・倍化（週プラン）・試薬調整・滅菌・手順（凍結/解凍/継代）を収録。入力のたびに自動計算＆ローカル保存。</p>
+  </div>
 
-  function fmtSciHTML(x, d=2){
-    if(!Number.isFinite(x) || x===0) return Number.isFinite(x)?'0':'—';
-    const s = x<0?'-':'';
-    const ax = Math.abs(x);
-    const e = Math.floor(Math.log10(ax));
-    const m = ax / Math.pow(10, e);
-    return `${s}${m.toFixed(d)}×10<sup>${e}</sup>`;
+  <aside class="right-panel" role="complementary" aria-label="だれでもわかる 細胞培養 計画・手順アプリ v0.30">
+    <div class="panel-header">
+      <span class="badge">v0.30</span><div class="title">だれでもわかる 細胞培養 計画・手順アプリ</div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="cells">細胞数/生存率</button>
+      <button class="tab-btn" data-tab="doubling">倍化（週プラン）</button>
+      <button class="tab-btn" data-tab="reagents">試薬の調整</button>
+      <button class="tab-btn" data-tab="sterile">滅菌</button>
+      <button class="tab-btn" data-tab="disposal">捨て方</button>
+      <button class="tab-btn" data-tab="culture">細胞培養</button>
+      <button class="tab-btn" data-tab="lysis">細胞融解</button>
+      <button class="tab-btn" data-tab="passage">細胞継代</button>
+      <button class="tab-btn" data-tab="recipes">ストック溶液レシピ</button>
+      <button class="tab-btn" data-tab="vessels">細胞培養容器データ集</button>
+      <button class="tab-btn" data-tab="units">単位換算</button>
+    </div>
+
+    <div class="panel-body">
+      <!-- ===== Cells ===== -->
+      <section id="tab-cells">
+        <div class="card">
+          <h3>入力（自動計算）</h3>
+          <div class="field"><div class="label">マス数</div><div><input type="number" id="squares" value="4" step="1"></div></div>
+          <div class="field"><div class="label">生細胞数の合計（自分で記入）</div><div><input type="number" id="liveTotal" step="1"></div></div>
+          <div class="field"><div class="label">死細胞数の合計（自分で記入）</div><div><input type="number" id="deadTotal" step="1"></div></div>
+          <div class="field"><div class="label">1マス体積 (mL) ※計算は10^4固定</div><div><input type="number" value="0.0001" readonly></div></div>
+          <div class="field"><div class="label">細胞液量（原液）</div><div><input type="number" id="stockVol" step="1"><span class="suffix">µL</span></div></div>
+          <div class="field"><div class="label">トリパンブルー溶液量</div><div><input type="number" id="tbVol" step="1"><span class="suffix">µL</span></div></div>
+          <div class="field"><div class="label">凍結チューブ体積</div><div><input type="number" id="frozenVol" value="2"><span class="suffix">mL</span></div></div>
+          <div class="field"><div class="label">培養容器内の液量</div><div><input type="number" id="containerVol"><span class="suffix">mL</span></div></div>
+          <div class="field"><div class="label">継代後の細胞濃度（目標）</div><div><input type="number" id="targetConc" step="1000" value="1000000"><span class="suffix">cells/mL</span></div></div>
+          <div class="note">数値を入力/変更するとすぐ下の結果が更新され、次回以降はブラウザに保存されます。</div>
+        </div>
+        <div class="card">
+          <h3>計算結果</h3>
+          <div class="row"><div class="label">生細胞数の合計</div><div class="value" id="r_liveSum">—</div></div>
+          <div class="row"><div class="label">生細胞数の平均</div><div class="value" id="r_liveAvg">—</div></div>
+          <div class="row"><div class="label">死細胞数の合計</div><div class="value" id="r_deadSum">—</div></div>
+          <div class="row"><div class="label">死細胞数の平均</div><div class="value" id="r_deadAvg">—</div></div>
+          <div class="row"><div class="label">全細胞数の合計</div><div class="value" id="r_totalSum">—</div></div>
+          <div class="row"><div class="label">全細胞数の平均</div><div class="value" id="r_totalAvg">—</div></div>
+          <div class="row"><div class="label">必要液量（細胞液 + トリパンブルー）</div><div class="value" id="r_totalMix">— µL</div></div>
+          <div class="row"><div class="label">希釈倍率（必要液量 ÷ 細胞液量）</div><div class="value" id="r_DF">—</div></div>
+          <div class="row"><div class="label">生存率（生平均 ÷ 全平均 × 100）</div><div class="value" id="r_viab">— %</div></div>
+          <div class="row"><div class="label">生細胞濃度（生平均 × DF × 10^4）</div><div class="value" id="r_liveConc">—</div></div>
+          <div class="row"><div class="label">全細胞濃度（全平均 × DF × 10^4）</div><div class="value" id="r_totalConc">—</div></div>
+          <div class="row"><div class="label">凍結チューブ中の全細胞数（体積[mL] × 全細胞濃度）</div><div class="value" id="r_frozen">—</div></div>
+          <div class="row"><div class="label">培養容器内の生細胞数（生細胞濃度 × 容器液量[mL]）</div><div class="value" id="r_container">—</div></div>
+          <div class="row"><div class="label">継代培養に必要な細胞液量（目標濃度 ÷ 生細胞濃度 × 容器液量）</div><div class="value" id="r_needCellVol">—</div></div>
+          <div class="row"><div class="label">継代培養に必要な培地（容器液量 − 必要細胞液量）</div><div class="value" id="r_needMedia">—</div></div>
+          <div id="cellsWarn" class="warn" style="display:none;">目標濃度が高すぎる可能性：必要な細胞液量が容器液量を超えています。条件を見直してください。</div>
+        </div>
+      </section>
+
+      <!-- ===== Doubling (週プラン) ===== -->
+      <section id="tab-doubling" style="display:none;">
+        <div class="card">
+          <h3>週プラン入力（自動計算＆保存）</h3>
+          <div class="field"><div class="label">週の開始日</div><div><input type="date" id="dbw_start"><span class="suffix">未入力なら今週の月曜</span></div></div>
+          <div class="field"><div class="label">週の開始日の朝の濃度 C0</div><div><input type="number" id="dbw_C0" placeholder="例: 2e5"><span class="suffix">cells/mL</span></div></div>
+
+          <div class="field"><div class="label">成長指定</div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <label><input type="radio" name="dbw_mode" value="dt" checked> 倍化時間</label>
+              <input type="number" id="dbw_DT" step="0.1" placeholder="例: 1"><span class="suffix">日/倍</span>
+              <span class="suffix">／または</span>
+              <label><input type="radio" name="dbw_mode" value="fold"> 1日あたりの倍率</label>
+              <input type="number" id="dbw_fold" step="0.01" placeholder="例: 2"><span class="suffix">×/日</span>
+            </div>
+          </div>
+
+          <div class="field"><div class="label">継代する曜日</div><div>
+            <select id="dbw_passDay"><option value="0">月</option><option value="1">火</option><option value="2" selected>水</option><option value="3">木</option><option value="4">金</option><option value="5">土</option><option value="6">日</option></select>
+          </div></div>
+          <div class="field"><div class="label">実験（目標）曜日</div><div>
+            <select id="dbw_expDay"><option value="0">月</option><option value="1">火</option><option value="2">水</option><option value="3">木</option><option value="4" selected>金</option><option value="5">土</option><option value="6">日</option></select>
+          </div></div>
+          <div class="field"><div class="label">実験日の目標濃度</div><div><input type="number" id="dbw_targetC" value="1000000"><span class="suffix">cells/mL</span></div></div>
+          <div class="note">曜日や数値を変えると、下の1週間表が自動更新。設定はブラウザに保存されます。</div>
+        </div>
+
+        <div class="card">
+          <h3>1週間プラン（朝 → 操作 → 当日終わり）</h3>
+          <div id="dbw_table" class="note">入力してください。</div>
+          <div class="note" style="margin-top:8px;">
+            ※ 継代日に、実験曜日の「朝」に目標濃度へ到達するよう、<b>希釈倍率</b>を逆算提案します（表の「推奨希釈」）。<br>
+            ※ 表示例：12,345（= 1.234×10<sup>4</sup>）
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 試薬の調整 ===== -->
+      <section id="tab-reagents" style="display:none;">
+        <div class="card">
+          <h3>試薬の調整（プリセット → 自動計算）</h3>
+          <div class="field"><div class="label">項目を選択</div>
+            <div>
+              <select id="reagPreset">
+                <option value="mem">MEM培地</option>
+                <option value="rpmi">RPMI1640培地</option>
+                <option value="nahco3_10">10% NaHCO₃</option>
+                <option value="gln_3">3% グルタミン</option>
+                <option value="strep_100mg">100 mg/mL ストレプトマイシン</option>
+                <option value="pen_100k">100,000 U/mL ペニシリン</option>
+                <option value="tb_0_4">0.4% トリパンブルー</option>
+                <option value="pbs1x">1× PBS(-)</option>
+              </select>
+            </div>
+          </div>
+          <div id="reagGuide" class="note">選ぶと手順メモと既定値が入ります。</div>
+        </div>
+
+        <div class="card">
+          <h3>目的体積（共通）</h3>
+          <div class="field"><div class="label">最終体積 V2</div><div><input type="number" id="V2" value="100"><span class="suffix">mL</span></div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" onclick="setV2(100)">100 mL</button>
+            <button class="btn" onclick="setV2(500)">500 mL</button>
+            <button class="btn" onclick="setV2(1000)">1 L</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>% w/v から質量</h3>
+          <div class="field"><div class="label">濃度</div><div><input type="number" id="pct" step="0.01"><span class="suffix">% w/v</span></div></div>
+          <div class="row"><div class="label">必要質量</div><div class="value" id="r_grams">— g（定容で — mL）</div></div>
+        </div>
+
+        <div class="card">
+          <h3>C1V1＝C2V2</h3>
+          <div class="field"><div class="label">C1（原液）</div><div><input type="number" id="C1" step="0.0001"><span id="unitC" class="suffix">mg/mL</span></div></div>
+          <div class="field"><div class="label">C2（最終）</div><div><input type="number" id="C2" step="0.0001"><span id="unitC2" class="suffix">（同上）</span></div></div>
+          <div class="row"><div class="label">必要な V1</div><div class="value" id="r_v1">— mL</div></div>
+          <div class="row"><div class="label">希釈溶媒（V2−V1）</div><div class="value" id="r_dil">— mL</div></div>
+          <div id="reagWarn" class="warn" style="display:none;">入力が不足/不整合です。</div>
+        </div>
+
+        <div class="card">
+          <h3>X倍ストック → 最終</h3>
+          <div class="field"><div class="label">ストック倍率</div><div><input type="number" id="stockFactor" value="10"><span class="suffix">×</span></div></div>
+          <div class="field"><div class="label">最終倍率</div><div><input type="number" id="finalFactor" value="1"><span class="suffix">×</span></div></div>
+          <div class="row"><div class="label">必要ストック量</div><div class="value" id="r_fx_v1">— mL</div></div>
+          <div class="row"><div class="label">希釈溶媒</div><div class="value" id="r_fx_dil">— mL</div></div>
+        </div>
+
+        <div class="card">
+          <h3>テーブル（レシピメモ）</h3>
+          <div id="reagTable" class="note">読み込み中…</div>
+        </div>
+      </section>
+
+      <!-- ===== 滅菌 ===== -->
+      <section id="tab-sterile" style="display:none;">
+        <div class="card">
+          <h3>器具から滅菌方法を検索</h3>
+          <div class="field">
+            <div class="label">対象物</div>
+            <div><select id="sterileCatalog"></select></div>
+          </div>
+          <div class="field">
+            <div class="label">オプション（任意）</div>
+            <div><label><input type="checkbox" id="optHasLiquid"> 液体を含む/液体の滅菌</label></div>
+          </div>
+          <div id="sterileSuggest" class="note">対象物を選ぶと推奨方法が表示されます。</div>
+        </div>
+
+        <div class="card"><h3>SOP / 参考リンク</h3>
+          <div class="field"><div class="label">URLまたはメモ</div><div><input type="text" id="sterileSOP" placeholder="例: ラボSOPの場所"></div></div>
+          <div class="note">具体条件は所属ラボのSOPに従ってください。</div>
+        </div>
+        <div class="card">
+          <h3>チェックリスト（高レベル）</h3>
+          <div><label><input type="checkbox" class="sterile-cb"> 前準備（器材/表示/残留物の確認）</label></div>
+          <div><label><input type="checkbox" class="sterile-cb"> 方法選択（オートクレーブ/乾熱/ろ過/化学/UV/炎焼却）</label></div>
+          <div><label><input type="checkbox" class="sterile-cb"> 実施（SOP手順に従い実行）</label></div>
+          <div><label><input type="checkbox" class="sterile-cb"> ラベル・記録（日時・担当）</label></div>
+          <div style="margin-top:8px;"><button class="btn btn-ghost" onclick="clearChecklist('sterile-cb')">全クリア</button></div>
+        </div>
+        <div class="card">
+          <h3>記録フォーム</h3>
+          <div class="field"><div class="label">器材名</div><div><input type="text" id="sterileItem"></div></div>
+          <div class="field"><div class="label">方法</div>
+            <div>
+              <select id="sterileMethod">
+                <option>オートクレーブ</option>
+                <option>乾熱</option>
+                <option>ろ過</option>
+                <option>化学</option>
+                <option>UV</option>
+                <option>炎焼却</option>
+                <option>市販滅菌品</option>
+              </select>
+            </div>
+          </div>
+          <div class="field"><div class="label">担当</div><div><input type="text" id="sterileWho"></div></div>
+          <div class="field"><div class="label">日付</div><div><input type="date" id="sterileDate"></div></div>
+          <div class="field"><div class="label">メモ</div><div><input type="text" id="sterileNote" placeholder="SOP IDなど"></div></div>
+          <div style="display:flex;gap:8px;"><button class="btn btn-primary" onclick="sterileAdd()">追加</button><button class="btn" onclick="sterileExport()">CSVエクスポート</button></div>
+        </div>
+        <div class="card"><h3>記録一覧</h3><div id="sterileTable" class="note">まだ記録がありません。</div></div>
+      </section>
+
+      <!-- ===== 捨て方 ===== -->
+      <section id="tab-disposal" style="display:none;">
+        <div class="card">
+          <h3>廃棄ログ</h3>
+          <div class="field"><div class="label">区分</div><div><select id="dispType"><option>可燃</option><option>不燃</option><option>感染性廃棄物</option><option>化学廃液</option></select></div></div>
+          <div class="field"><div class="label">容器/本数</div><div><input type="text" id="dispQty" placeholder="例: 赤袋 ×1 / 20L缶 ×1"></div></div>
+          <div class="field"><div class="label">担当</div><div><input type="text" id="dispWho"></div></div>
+          <div class="field"><div class="label">日付</div><div><input type="date" id="dispDate"></div></div>
+          <div class="field"><div class="label">メモ</div><div><input type="text" id="dispNote"></div></div>
+          <div style="display:flex;gap:8px;"><button class="btn btn-primary" onclick="dispAdd()">追加</button><button class="btn" onclick="dispExport()">CSVエクスポート</button></div>
+        </div>
+        <div class="card"><h3>記録一覧</h3><div id="dispTable" class="note">まだ記録がありません。</div></div>
+      </section>
+
+      <!-- ===== 細胞培養（凍結もここに） ===== -->
+      <section id="tab-culture" style="display:none;">
+        <div class="card"><h3>SOP / 参考リンク</h3><div class="field"><div class="label">URLまたはメモ</div><div><input type="text" id="cultSOP" placeholder="例: 継代SOP / 播種SOP"></div></div><div class="note">具体条件はSOPに準拠。ここでは作業ログのみ扱います。</div></div>
+
+        <div class="card">
+          <h3>細胞の凍結保存（手順ガイド）</h3>
+          <div class="note">※ 目安フロー。具体条件は所属ラボSOPを最優先。</div>
+          <div style="margin:6px 0;"><button class="btn" onclick="goTab('cells')">細胞数ツールを開く</button></div>
+          <div id="freezeSteps">読み込み中…</div>
+        </div>
+
+        <div class="card">
+          <h3>チェックリスト（高レベル）</h3>
+          <div><label><input type="checkbox" class="cult-cb"> 作業前準備（安全/清拭/器具確認）</label></div>
+          <div><label><input type="checkbox" class="cult-cb"> 培地/試薬準備</label></div>
+          <div><label><input type="checkbox" class="cult-cb"> 継代または播種（SOP通り）</label></div>
+          <div><label><input type="checkbox" class="cult-cb"> 片付け・記録</label></div>
+          <div style="margin-top:8px;"><button class="btn btn-ghost" onclick="clearChecklist('cult-cb')">全クリア</button></div>
+        </div>
+
+        <div class="card">
+          <h3>記録フォーム</h3>
+          <div class="field"><div class="label">株名/セルライン</div><div><input type="text" id="cultCell"></div></div>
+          <div class="field"><div class="label">パッセージ（任意）</div><div><input type="text" id="cultPassage" placeholder="例: P12"></div></div>
+          <div class="field"><div class="label">容器/条件（任意）</div><div><input type="text" id="cultVessel" placeholder="例: T25 ×1"></div></div>
+          <div class="field"><div class="label">担当</div><div><input type="text" id="cultWho"></div></div>
+          <div class="field"><div class="label">日付</div><div><input type="date" id="cultDate"></div></div>
+          <div class="field"><div class="label">メモ</div><div><input type="text" id="cultNote"></div></div>
+          <div style="display:flex;gap:8px;"><button class="btn btn-primary" onclick="cultAdd()">追加</button><button class="btn" onclick="cultExport()">CSVエクスポート</button></div>
+        </div>
+        <div class="card"><h3>記録一覧</h3><div id="cultTable" class="note">まだ記録がありません。</div></div>
+      </section>
+
+      <!-- ===== 細胞融解（解凍） ===== -->
+      <section id="tab-lysis" style="display:none;">
+        <div class="card">
+          <h3>凍結細胞の解凍と再培養（手順ガイド）</h3>
+          <div class="note">※ 目安フロー。具体条件は所属ラボSOPを最優先。</div>
+          <div style="margin:6px 0;"><button class="btn" onclick="goTab('cells')">細胞数ツールを開く</button></div>
+          <div id="thawSteps">読み込み中…</div>
+        </div>
+
+        <div class="card"><h3>SOP / 参考リンク</h3><div class="field"><div class="label">URLまたはメモ</div><div><input type="text" id="lysisSOP" placeholder="例: 化学的/物理的融解のSOP"></div></div><div class="note">具体条件はラボSOPを参照。</div></div>
+        <div class="card">
+          <h3>チェックリスト（高レベル）</h3>
+          <div><label><input type="checkbox" class="lysis-cb"> 方法選択（化学/物理）</label></div>
+          <div><label><input type="checkbox" class="lysis-cb"> 前準備（安全装備・廃液容器確認）</label></div>
+          <div><label><input type="checkbox" class="lysis-cb"> 実施（SOP手順）</label></div>
+          <div><label><input type="checkbox" class="lysis-cb"> 廃液処理/片付け/記録</label></div>
+          <div style="margin-top:8px;"><button class="btn btn-ghost" onclick="clearChecklist('lysis-cb')">全クリア</button></div>
+        </div>
+        <div class="card">
+          <h3>記録フォーム</h3>
+          <div class="field"><div class="label">サンプルID</div><div><input type="text" id="lysisID"></div></div>
+          <div class="field"><div class="label">方法タイプ</div><div><select id="lysisType"><option>化学的</option><option>物理的</option></select></div></div>
+          <div class="field"><div class="label">バッファ/装置（任意）</div><div><input type="text" id="lysisBuf" placeholder="例: RIPA / ソニケータ"></div></div>
+          <div class="field"><div class="label">担当</div><div><input type="text" id="lysisWho"></div></div>
+          <div class="field"><div class="label">日付</div><div><input type="date" id="lysisDate"></div></div>
+          <div class="field"><div class="label">メモ</div><div><input type="text" id="lysisNote"></div></div>
+          <div style="display:flex;gap:8px;"><button class="btn btn-primary" onclick="lysisAdd()">追加</button><button class="btn" onclick="lysisExport()">CSVエクスポート</button></div>
+        </div>
+        <div class="card"><h3>記録一覧</h3><div id="lysisTable" class="note">まだ記録がありません。</div></div>
+      </section>
+
+      <!-- ===== 継代 ===== -->
+      <section id="tab-passage" style="display:none;">
+        <div class="card">
+          <h3>細胞の継代（手順ガイド）</h3>
+
+          <div class="field">
+            <div class="label">タイプ</div>
+            <div>
+              <label><input type="radio" name="passType" id="passType_a" value="adherent" checked> 付着型</label>
+              <label style="margin-left:12px;"><input type="radio" name="passType" id="passType_s" value="suspension"> 浮遊型</label>
+            </div>
+          </div>
+
+          <!-- 容器別の量（付着型向けの目安） -->
+          <div class="field">
+            <div class="label">容器（付着型の目安）</div>
+            <div>
+              <select id="passVessel" style="width:auto">
+                <option value="T25">T-25 フラスコ</option>
+                <option value="T75">T-75 フラスコ</option>
+                <option value="D10">10 cm 皿</option>
+              </select>
+              <button class="btn" id="btnCopyVessel">メモへコピー</button>
+            </div>
+          </div>
+          <div id="passageVesselGuide" class="note">容器を選ぶと、PBS / トリプシン / 停止培地の目安が表示されます。</div>
+
+          <div class="note" style="margin-top:6px;">※ ラボのSOPを最優先。ここは目安の流れです。チェックは自動保存。</div>
+          <div style="margin:6px 0;"><button class="btn" onclick="goTab('cells')">細胞数ツールを開く</button></div>
+
+          <div id="passageSteps">読み込み中…</div>
+
+          <details style="margin-top:8px"><summary>くわしい補足・式</summary>
+            <div class="note">
+              <strong>付着型のコツ：</strong> PBS(-) で洗い → トリプシンは長く放置しない。<br>
+              <strong>浮遊型のコツ：</strong> 目標 C<sub>target</sub>、現在 C・体積 V のとき追加培地 V<sub>add</sub> = V × (C / C<sub>target</sub> − 1)。<br>
+              <strong>スピン目安：</strong> 190–200 g（約1,000 rpm相当）× 3 分 → 上清除去（細胞種で調整）。
+            </div>
+          </details>
+        </div>
+
+        <div class="card">
+          <h3>継代ログ</h3>
+          <div class="field"><div class="label">セルライン</div><div><input type="text" id="passCell"></div></div>
+          <div class="field"><div class="label">パッセージ</div><div><input type="text" id="passPsg" placeholder="例: P12"></div></div>
+          <div class="field"><div class="label">担当</div><div><input type="text" id="passWho"></div></div>
+          <div class="field"><div class="label">日付</div><div><input type="date" id="passDate"></div></div>
+          <div class="field"><div class="label">メモ</div><div><input type="text" id="passNote" placeholder="播種量/容器等"></div></div>
+          <div style="display:flex;gap:8px;"><button class="btn btn-primary" onclick="passAdd()">追加</button><button class="btn" onclick="passExport()">CSVエクスポート</button></div>
+        </div>
+
+        <div class="card"><h3>記録一覧</h3><div id="passTable" class="note">まだ記録がありません。</div></div>
+      </section>
+
+      <!-- ===== レシピ ===== -->
+      <section id="tab-recipes" style="display:none;">
+        <div class="card">
+          <h3>バッファーのストック溶液レシピ</h3>
+          <div class="field"><div class="label">レシピ</div><div><select id="recipeKind"><option value="TAE50x">50×TAE（Tris-acetate-EDTA）</option><option value="TBE10x" selected>10×TBE（Tris-borate-EDTA）</option></select></div></div>
+          <div class="field"><div class="label">作る体積</div><div><input type="number" id="recipeVol" value="1" step="0.1"><span class="suffix">L</span></div></div>
+          <button class="btn btn-primary" onclick="calcRecipe()">計算</button>
+        </div>
+        <div class="card" id="recipeOut"><div class="note">上の「計算」を押してください。</div></div>
+      </section>
+
+      <!-- ===== 容器データ ===== -->
+      <section id="tab-vessels" style="display:none;">
+        <div class="card"><h3>代表的な培養容器（目安）</h3>
+          <div id="vessels_table" class="note">読み込み中…</div>
+        </div>
+      </section>
+
+      <!-- ===== 単位換算 ===== -->
+      <section id="tab-units" style="display:none;">
+        <div class="card"><h3>体積・質量・濃度</h3>
+          <div class="field"><div class="label">カテゴリ</div><div>
+            <select id="u_cat"><option value="vol">体積</option><option value="mass">質量</option><option value="conc">濃度（mg/mL, g/L, %w/v）</option></select></div></div>
+          <div class="field"><div class="label">値</div><div><input type="number" id="u_val" step="0.000001" value="1"></div></div>
+          <div class="field"><div class="label">単位（From）</div><div><select id="u_from"></select></div></div>
+          <div class="field"><div class="label">単位（To）</div><div><select id="u_to"></select></div></div>
+          <div style="display:flex;gap:8px;"><button class="btn btn-primary" onclick="convUnits()">変換</button><button class="btn" onclick="clearForm('tab-units')">クリア</button></div>
+        </div>
+        <div class="card"><h3>結果</h3>
+          <div class="row"><div class="label">変換後</div><div class="value" id="u_out">—</div></div>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+<script>
+  // ==== Tabs ====
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab=btn.dataset.tab;
+      document.querySelectorAll('.panel-body > section').forEach(sec=>sec.style.display='none');
+      const pane=document.getElementById('tab-'+tab);
+      if(pane) pane.style.display='block';
+    });
+  });
+
+  // ==== Helpers ====
+  function n(v){ const x=Number(v); return Number.isFinite(x)?x:0; }
+  function fmt(x,d=2){ if(!Number.isFinite(x)) return '—'; return x.toLocaleString(undefined,{maximumFractionDigits:d}); }
+  function fmtSciHTML(x){
+    const num=Number(x);
+    if(!Number.isFinite(num) || num===0) return '0';
+    const abs=Math.abs(num);
+    if(abs>=1e5 || abs<1e-3){
+      const exp=Math.floor(Math.log10(abs));
+      const mant=num/Math.pow(10,exp);
+      return `${mant.toFixed(3)}×10<sup>${exp}</sup>`;
+    }
+    return num.toLocaleString();
   }
-  function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-  function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
-  function mondayOf(d){
-    const x=new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const day = (x.getDay()+6)%7; // 0=Mon ... 6=Sun
-    x.setDate(x.getDate()-day);
-    return x;
+  function clearChecklist(cls){ document.querySelectorAll('.'+cls).forEach(c=>c.checked=false); }
+  function toCSV(rows){ if(!rows.length) return ''; const keys=Object.keys(rows[0]); const esc=s=>`"${String(s??'').replace(/"/g,'""')}"`; return [keys.map(esc).join(','), ...rows.map(r=>keys.map(k=>esc(r[k])).join(','))].join('\n'); }
+  function downloadCSV(filename, rows){ const csv=toCSV(rows); if(!csv) return; const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
+  function renderTable(el, rows){ if(!rows.length){ el.innerHTML='<div class="note">まだ記録がありません。</div>'; return; } const keys=Object.keys(rows[0]); let html='<table><thead><tr>'+keys.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>'; html+=rows.map(r=>'<tr>'+keys.map(k=>'<td>'+(r[k]??'')+'</td>').join('')+'</tr>').join(''); html+='</tbody></table>'; el.innerHTML=html; }
+  function clearForm(sectionId){
+    const sec=document.getElementById(sectionId);
+    sec.querySelectorAll('input[type=number],input[type=text],input[type=date],textarea').forEach(el=>{ if(!el.readOnly){ el.value=''; }});
+    sec.querySelectorAll('select').forEach(s=>s.selectedIndex=0);
   }
-  function getMode(){ return (document.querySelector('input[name="dbw_mode"]:checked')?.value)||'DT'; }
+  function ymd(d){ const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
+  function mondayOf(d){ const t=new Date(d.getFullYear(), d.getMonth(), d.getDate()); const day=(t.getDay()+6)%7; t.setDate(t.getDate()-day); return t; }
+  function addDays(d, n){ const t=new Date(d); t.setDate(t.getDate()+n); return t; }
+
+  // ==== Cells ====
+  function cellsSave(){
+    const data={
+      squares:document.getElementById('squares').value,
+      liveTotal:document.getElementById('liveTotal').value,
+      deadTotal:document.getElementById('deadTotal').value,
+      stockVol:document.getElementById('stockVol').value,
+      tbVol:document.getElementById('tbVol').value,
+      frozenVol:document.getElementById('frozenVol').value,
+      containerVol:document.getElementById('containerVol').value,
+      targetConc:document.getElementById('targetConc').value,
+    };
+    localStorage.setItem('cells_inputs', JSON.stringify(data));
+  }
+  function cellsLoad(){
+    const raw=localStorage.getItem('cells_inputs'); if(!raw) return;
+    try{ const d=JSON.parse(raw);
+      Object.entries(d).forEach(([k,v])=>{ const el=document.getElementById(k); if(el!=null) el.value=v; });
+    }catch(e){}
+  }
+  function calcCells(){
+    const squares=Math.max(1,n(document.getElementById('squares').value));
+    const liveSum=n(document.getElementById('liveTotal').value);
+    const deadSum=n(document.getElementById('deadTotal').value);
+    const stock=n(document.getElementById('stockVol').value);
+    const tb=n(document.getElementById('tbVol').value);
+    const frozenVol=n(document.getElementById('frozenVol').value);
+    const containerVol=n(document.getElementById('containerVol').value);
+    const targetConc=n(document.getElementById('targetConc').value);
+
+    const DF=stock>0?(stock+tb)/stock:1;
+    const liveAvg=liveSum/squares;
+    const totalAvg=(liveSum+deadSum)/squares;
+    const viab=totalAvg>0?(liveAvg/totalAvg)*100:0;
+    const liveConc=liveAvg*DF*1e4;
+    const totalConc=totalAvg*DF*1e4;
+    const frozenCells=frozenVol*totalConc;
+    const containerLive=containerVol*liveConc;
+    const needCellVol=liveConc>0?(targetConc/liveConc)*containerVol:0;
+    const needMedia=containerVol-needCellVol;
+
+    document.getElementById('r_liveSum').innerHTML=fmt(liveSum,0);
+    document.getElementById('r_liveAvg').innerHTML=fmt(liveAvg,2);
+    document.getElementById('r_deadSum').innerHTML=fmt(deadSum,0);
+    document.getElementById('r_deadAvg').innerHTML=fmt(deadSum/squares,2);
+    document.getElementById('r_totalSum').innerHTML=fmt(liveSum+deadSum,0);
+    document.getElementById('r_totalAvg').innerHTML=fmt(totalAvg,2);
+    document.getElementById('r_totalMix').innerHTML=fmt(stock+tb,2)+' µL';
+    document.getElementById('r_DF').innerHTML=fmt(DF,3);
+    document.getElementById('r_viab').innerHTML=fmt(viab,2)+' %';
+    document.getElementById('r_liveConc').innerHTML=`${fmt(liveConc,0)}（= ${fmtSciHTML(liveConc)}） cells/mL`;
+    document.getElementById('r_totalConc').innerHTML=`${fmt(totalConc,0)}（= ${fmtSciHTML(totalConc)}） cells/mL`;
+    document.getElementById('r_frozen').innerHTML=`${fmt(frozenCells,0)}（= ${fmtSciHTML(frozenCells)}） cells`;
+    document.getElementById('r_container').innerHTML=`${fmt(containerLive,0)}（= ${fmtSciHTML(containerLive)}） cells`;
+    document.getElementById('r_needCellVol').innerHTML=fmt(needCellVol,3)+' mL';
+    document.getElementById('r_needMedia').innerHTML=fmt(needMedia,3)+' mL';
+    document.getElementById('cellsWarn').style.display=(needCellVol>containerVol+1e-12 || needMedia<-1e-12)?'block':'none';
+  }
+
+  // auto-calc+save for cells
+  function wireCellsAuto(){
+    document.querySelectorAll('#tab-cells input').forEach(el=>{
+      el.addEventListener('input', ()=>{ calcCells(); cellsSave(); });
+      el.addEventListener('change', ()=>{ calcCells(); cellsSave(); });
+    });
+  }
+
+  // ==== Doubling (週プラン) ====
+  function getMode(){ const r=document.querySelector('input[name="dbw_mode"]:checked'); return r?r.value:'dt'; }
   function gPerDay(){
     const mode=getMode();
-    const DT = Number(document.getElementById('dbw_DT')?.value)||24;
-    const fold = Number(document.getElementById('dbw_fold')?.value)||2;
-    return mode==='FOLD' ? (fold>0?fold:2) : Math.pow(2, 24/(DT>0?DT:24));
+    const DT=n(document.getElementById('dbw_DT').value);
+    const fold=n(document.getElementById('dbw_fold').value);
+    if(mode==='dt'){
+      if(DT>0) return Math.pow(2,1/DT);
+      // DT未入力なら fold にフォールバック
+      return (fold>0? fold: 2);
+    }else{
+      if(fold>0) return fold;
+      return (DT>0? Math.pow(2,1/DT): 2);
+    }
   }
-
-  // --- 保存/復元 ---
-  function save(){
+  function saveDBW(){
     const data = {
       start:  document.getElementById('dbw_start')?.value||'',
       C0:     document.getElementById('dbw_C0')?.value||'',
@@ -41,7 +561,7 @@
     };
     localStorage.setItem('dbw_inputs', JSON.stringify(data));
   }
-  function load(){
+  function loadDBW(){
     const raw = localStorage.getItem('dbw_inputs');
     if(!raw) return;
     try{
@@ -59,13 +579,10 @@
       if(d.targetC) document.getElementById('dbw_targetC').value = d.targetC;
     }catch(e){}
   }
-
-  // --- 週間計画（曜日だけで運用） ---
   function planWeek(){
     const tableEl = document.getElementById('dbw_table');
     if(!tableEl) return;
 
-    // 入力
     let start = document.getElementById('dbw_start')?.value;
     if(!start){
       const mon = mondayOf(new Date());
@@ -75,37 +592,36 @@
     const startDate = new Date(start+'T00:00:00');
     let C = Number(document.getElementById('dbw_C0')?.value)||0;     // 週の開始日の朝の濃度
     const passDay = Number(document.getElementById('dbw_passDay')?.value)||2; // 0=月
-    const expDay  = Number(document.getElementById('dbw_expDay')?.value)||4;  // 0=月（金デフォ）
+    const expDay  = Number(document.getElementById('dbw_expDay')?.value)||4;  // 0=月
     const targetC = Number(document.getElementById('dbw_targetC')?.value)||0;
     const g = gPerDay();
 
-    // 表構築
     const rows = [];
     for(let d=0; d<7; d++){
       const date = addDays(startDate, d);
       let op=''; let fText=''; let Cafter='—';
 
-      // 継代日に、実験曜日の“朝”に目標濃度へ到達するよう逆算した希釈倍率を提案
+      // 継代日に、実験曜日の朝に目標濃度へ到達するよう逆算
       if(d===passDay && targetC>0){
-        const daysToExp = (expDay - d + 7) % 7;              // 継代→実験日の朝までの日数
+        const daysToExp = (expDay - d + 7) % 7;
         const neededAfter = targetC / Math.pow(g, daysToExp); // 継代直後に必要な濃度
         if(neededAfter>0){
           const f = C>0 ? (C / neededAfter) : NaN;
           if(Number.isFinite(f) && f>0){
             if(f>=1){ op='希釈'; fText = `1:${f.toFixed(2)}`; }
             else    { op='濃縮'; fText = `× ${(1/f).toFixed(2)}`; }
-            C = neededAfter;                     // 希釈後を起点に再増殖
+            C = neededAfter; // 希釈後を起点
             Cafter = `${C.toLocaleString()}（= ${fmtSciHTML(C)}）`;
           }
         }
       }
 
-      const Cstart = C;           // 朝の濃度
-      const Cend   = Cstart * g;  // 当日終わり（1日分の増殖）
-      C = Cend;                   // 次日朝へ引き継ぎ
+      const Cstart = C;           // 朝
+      const Cend   = Cstart * g;  // 終わり
+      C = Cend;                   // 次日朝へ
 
       rows.push({
-        '曜日': WN[d],
+        '曜日': ['月','火','水','木','金','土','日'][d],
         '日付': ymd(date),
         '朝の濃度': `${Cstart.toLocaleString()}（= ${fmtSciHTML(Cstart)}）`,
         '操作': op || '',
@@ -123,32 +639,532 @@
     html+='</tbody></table>';
     tableEl.innerHTML=html;
   }
-
-  // --- 自動計算/保存の配線 ---
-  function wire(){
+  function wireDBW(){
     const ids = ['dbw_start','dbw_C0','dbw_DT','dbw_fold','dbw_passDay','dbw_expDay','dbw_targetC'];
     ids.forEach(id=>{
       const el=document.getElementById(id);
       if(!el) return;
-      el.addEventListener('input', ()=>{ save(); planWeek(); });
-      el.addEventListener('change', ()=>{ save(); planWeek(); });
+      el.addEventListener('input', ()=>{ saveDBW(); planWeek(); });
+      el.addEventListener('change', ()=>{ saveDBW(); planWeek(); });
     });
     document.querySelectorAll('input[name="dbw_mode"]').forEach(r=>{
-      r.addEventListener('change', ()=>{ save(); planWeek(); });
+      r.addEventListener('change', ()=>{ saveDBW(); planWeek(); });
     });
   }
 
-  // --- 起動 ---
-  window.addEventListener('load', ()=>{
-    // 旧フォーマット掃除（expDateが残っていたら削除）
-    try{ const d=JSON.parse(localStorage.getItem('dbw_inputs')||'{}'); if('expDate' in d){ delete d.expDate; localStorage.setItem('dbw_inputs', JSON.stringify(d)); } }catch(e){}
-    // 週開始日のデフォルト（月曜日）
-    const startEl = document.getElementById('dbw_start');
-    if(startEl && !startEl.value){ startEl.value = ymd(mondayOf(new Date())); }
-    load();
-    wire();
-    planWeek();
+  // ==== 試薬調整：プリセット ====
+  const REAGENTS = [
+    { id:'mem',  name:'MEM培地',  method:'MEM培地0.94 g、MilliQ水100 mL、オートクレーブ滅菌。', note:'添付文書/SOPを最優先。必要に応じて添加剤を別途。', preset:{ mode:'percent', pct:0.94 } },
+    { id:'rpmi', name:'RPMI1640培地', method:'RPMI1640培地1.02 g、MilliQ水100 mL、オートクレーブ滅菌。', note:'添付文書/SOPを最優先。', preset:{ mode:'percent', pct:1.02 } },
+    { id:'nahco3_10', name:'10% NaHCO₃', method:'NaHCO₃ 10.0 g、超純水100 mL。撹拌で溶解→オートクレーブ滅菌。', note:'', preset:{ mode:'percent', pct:10 } },
+    { id:'gln_3', name:'3% グルタミン', method:'超純水10 mLにグルタミン0.3 gを溶解。0.22 µmでろ過滅菌→冷凍保存。', note:'', preset:{ mode:'percent', pct:3 } },
+    { id:'strep_100mg', name:'100 mg/mL ストレプトマイシン', method:'超純水5 mLにストマ0.5 g溶解。0.22 µmでろ過滅菌→冷凍保存。', note:'', preset:{ mode:'c1v1', C1:100, C2:100, unit:'mg/mL' } },
+    { id:'pen_100k', name:'100,000 U/mL ペニシリン', method:'超純水5 mLにペニシリン500,000 U相当を溶解。0.22 µmでろ過滅菌→冷凍保存。', note:'力価換算は製品規定に従う。', preset:{ mode:'c1v1', C1:100000, C2:100000, unit:'U/mL' } },
+    { id:'tb_0_4', name:'0.4% トリパンブルー', method:'粉末から0.4%（w/v）に調製→0.22 µmでろ過滅菌。暗所保存。', note:'', preset:{ mode:'percent', pct:0.4 } },
+    { id:'pbs1x', name:'1× PBS(-)', method:'NaCl 4.0 g、KCl 0.1 g、Na₂HPO₄·12H₂O 1.45 g、KH₂PO₄ 0.1 g→ 500 mL 定容。オートクレーブ滅菌。', note:'', preset:{} },
+  ];
+  function renderReagTable(){
+    const rows = REAGENTS.map(r=>({ 培地名:r.name, 調整方法:r.method, 注意点:r.note }));
+    renderTable(document.getElementById('reagTable'), rows);
+  }
+  function setV2(v){ const el=document.getElementById('V2'); if(!el) return; el.value=v; calcC1V1(); calcPercent(); calcFactor(); reagSave(); }
+  document.getElementById('reagPreset').addEventListener('change', ()=>{
+    const id = document.getElementById('reagPreset').value;
+    const r = REAGENTS.find(x=>x.id===id);
+    if(!r) return;
+    document.getElementById('reagGuide').innerHTML = `<div class="note"><strong>${r.name}</strong><br>${r.method}${r.note?('<br>注意：'+r.note):''}</div>`;
+    fillFromPreset();
+    reagSave();
   });
-})();
-</script>
+  function fillFromPreset(){
+    const id = document.getElementById('reagPreset').value;
+    const r = REAGENTS.find(x=>x.id===id); if(!r) return;
+    if(r.preset.mode==='percent'){
+      document.getElementById('pct').value = r.preset.pct ?? '';
+    }else if(r.preset.mode==='c1v1'){
+      document.getElementById('C1').value = r.preset.C1 ?? '';
+      document.getElementById('C2').value = r.preset.C2 ?? '';
+      document.getElementById('unitC').textContent = r.preset.unit || 'mg/mL';
+      document.getElementById('unitC2').textContent = '（同上）';
+    }else if(r.preset.mode==='factor'){
+      document.getElementById('stockFactor').value = r.preset.stockX ?? 10;
+      document.getElementById('finalFactor').value = r.preset.finalX ?? 1;
+    }
+    calcC1V1(); calcPercent(); calcFactor();
+  }
+  function calcC1V1(){
+    const C1=n(document.getElementById('C1').value), C2=n(document.getElementById('C2').value), V2=n(document.getElementById('V2').value);
+    const warn = document.getElementById('reagWarn');
+    if(C1<=0 || V2<=0){ document.getElementById('r_v1').textContent='— mL'; document.getElementById('r_dil').textContent='— mL'; if(warn) warn.style.display='block'; return; }
+    const V1 = (C2*V2)/C1;
+    const dil = V2 - V1;
+    document.getElementById('r_v1').textContent = (V1<0||!isFinite(V1))?'— mL':fmt(V1,3)+' mL';
+    document.getElementById('r_dil').textContent = (dil<0||!isFinite(dil))?'— mL':fmt(dil,3)+' mL';
+    if(warn) warn.style.display = (V1<0 || dil<0)?'block':'none';
+  }
+  function calcPercent(){
+    const pct=n(document.getElementById('pct').value);
+    const V2=n(document.getElementById('V2').value);
+    if(pct<=0 || V2<=0){ document.getElementById('r_grams').textContent='— g（定容で — mL）'; return; }
+    const g=(pct/100)*V2;
+    document.getElementById('r_grams').textContent=fmt(g,3)+' g（定容で '+fmt(V2,0)+' mL）';
+  }
+  function calcFactor(){
+    const stockX=n(document.getElementById('stockFactor').value);
+    const finalX=n(document.getElementById('finalFactor').value);
+    const V2=n(document.getElementById('V2').value);
+    const warn = document.getElementById('reagWarn');
+    if(stockX<=0 || finalX<=0 || V2<=0){ document.getElementById('r_fx_v1').textContent='— mL'; document.getElementById('r_fx_dil').textContent='— mL'; if(warn) warn.style.display='block'; return; }
+    const V1 = V2*(finalX/stockX);
+    const dil = V2 - V1;
+    document.getElementById('r_fx_v1').textContent=fmt(V1,3)+' mL';
+    document.getElementById('r_fx_dil').textContent=fmt(dil,3)+' mL';
+    if(warn) warn.style.display = (V1<0 || dil<0)?'block':'none';
+  }
+  function reagSave(){
+    const data={
+      V2:document.getElementById('V2').value,
+      pct:document.getElementById('pct').value,
+      C1:document.getElementById('C1').value,
+      C2:document.getElementById('C2').value,
+      stockFactor:document.getElementById('stockFactor').value,
+      finalFactor:document.getElementById('finalFactor').value,
+      preset:document.getElementById('reagPreset').value
+    };
+    localStorage.setItem('reag_inputs', JSON.stringify(data));
+  }
+  function reagLoad(){
+    const raw=localStorage.getItem('reag_inputs'); if(!raw) return;
+    try{ const d=JSON.parse(raw);
+      ['V2','pct','C1','C2','stockFactor','finalFactor'].forEach(k=>{ const el=document.getElementById(k); if(el) el.value=d[k]??el.value; });
+      if(d.preset){ const sel=document.getElementById('reagPreset'); sel.value=d.preset; sel.dispatchEvent(new Event('change')); }
+    }catch(e){}
+  }
+  function wireReagAuto(){
+    ['V2','pct','C1','C2','stockFactor','finalFactor'].forEach(id=>{
+      const el=document.getElementById(id); if(!el) return;
+      el.addEventListener('input', ()=>{ calcC1V1(); calcPercent(); calcFactor(); reagSave(); });
+      el.addEventListener('change', ()=>{ calcC1V1(); calcPercent(); calcFactor(); reagSave(); });
+    });
+  }
 
+  // ==== 滅菌：プリセット DB ====
+  const STERILE_DB = {
+    methods: {
+      autoclave121: { name:'オートクレーブ（121°C 15–20分）', detail:'液体は液体プログラム。自然冷却。キャップを緩める。', caution:'沸騰・噴出、過充填に注意。' },
+      autoclave134: { name:'オートクレーブ（134°C 3–5分）', detail:'器具向け（プレバキューム）', caution:'樹脂は変形リスク。' },
+      dryheat175:   { name:'乾熱滅菌（175°C 1.5時間 または 180°C 30分）', detail:'ガラス/陶器/金属向け。', caution:'樹脂NG。耐熱確認。' },
+      filtration022:{ name:'ろ過滅菌（0.22 µm 推奨 / 0.45 µm 可）', detail:'加熱不可の溶液（ビタミン/血清など）。', caution:'ウイルスは除去できない。' },
+      chem70:       { name:'化学的：70%エタノール', detail:'十分に濡らし10分接触→乾燥。', caution:'可燃・火気厳禁。' },
+      uv:           { name:'UV（260 nm付近 15–30分/面）', detail:'10–20 cm、影を作らない配置。', caution:'眼・皮膚保護必須。表面のみ有効。' },
+      flame:        { name:'炎焼却（フレーム）', detail:'白金耳/白金線の先端を短時間赤熱。', caution:'可燃物・エアロゾル注意。' },
+      gamma_eog:    { name:'市販滅菌品（γ線またはEOG）を使用', detail:'PSなど耐熱NG製品は滅菌済み新品を使用。', caution:'再滅菌不可の製品あり。' },
+    },
+    items: [
+      { id:'media_heat_ok',   group:'溶液/培地', name:'培地・溶液（熱変性を起こさない）', methods:['autoclave121'], avoid:[] },
+      { id:'media_heat_ng',   group:'溶液/培地', name:'溶液（熱に弱い/成分変性の恐れ）', methods:['filtration022','uv'], avoid:['autoclave121','dryheat175'] },
+      { id:'vitamins',        group:'溶液/培地', name:'ビタミン類', methods:['filtration022'], avoid:['autoclave121','dryheat175'] },
+      { id:'serum',           group:'溶液/培地', name:'血清', methods:['filtration022'], avoid:['autoclave121','dryheat175'] },
+      { id:'glass_autoclave', group:'器具（ガラス/金属）', name:'ガラス器具（オートクレーブ）', methods:['autoclave121'], avoid:[] },
+      { id:'glass_dry',       group:'器具（ガラス/金属）', name:'ガラス器具（乾熱）', methods:['dryheat175'], avoid:[] },
+      { id:'porcelain',       group:'器具（ガラス/金属）', name:'陶器', methods:['dryheat175'], avoid:[] },
+      { id:'metal_autoclave', group:'器具（ガラス/金属）', name:'金属器具（オートクレーブ）', methods:['autoclave134','autoclave121'], avoid:[] },
+      { id:'platinum_loop',   group:'器具（ガラス/金属）', name:'白金耳/白金線', methods:['flame'], avoid:[] },
+      { id:'pipette_tips_pp', group:'器具（プラスチック）', name:'ピペットチップ（PP）', methods:['autoclave121','uv','chem70'], avoid:['dryheat175'] },
+      { id:'microtube_pp',    group:'器具（プラスチック）', name:'マイクロチューブ（PP）', methods:['autoclave121'], avoid:['dryheat175','uv'] },
+      { id:'centrifuge_pp',   group:'器具（プラスチック）', name:'遠沈管 15/50 mL（PP）', methods:['autoclave121'], avoid:['dryheat175'] },
+      { id:'centrifuge_ps',   group:'器具（プラスチック）', name:'遠沈管 15/50 mL（PS）', methods:['uv','chem70','gamma_eog'], avoid:['autoclave121','dryheat175'] },
+      { id:'petri_ps',        group:'器具（プラスチック）', name:'シャーレ（PS）', methods:['uv','chem70','gamma_eog'], avoid:['autoclave121','dryheat175'] },
+      { id:'bio_waste',       group:'微生物/廃棄', name:'微生物での汚染物の廃棄', methods:['autoclave121'], avoid:[] },
+    ],
+  };
+  function methodKeyToCategory(key){
+    if(key.startsWith('autoclave')) return 'オートクレーブ';
+    if(key==='dryheat175') return '乾熱';
+    if(key==='filtration022') return 'ろ過';
+    if(key==='chem70') return '化学';
+    if(key==='uv') return 'UV';
+    if(key==='flame') return '炎焼却';
+    if(key==='gamma_eog') return '市販滅菌品';
+    return '';
+  }
+  function sterileInitCatalog(){
+    const sel=document.getElementById('sterileCatalog');
+    if(!sel) return;
+    const order=['溶液/培地','器具（ガラス/金属）','器具（プラスチック）','微生物/廃棄'];
+    sel.innerHTML = order.map(g=>{
+      const opts = STERILE_DB.items.filter(i=>i.group===g)
+        .map(i=>`<option value="${i.id}">${i.name}</option>`).join('');
+      return `<optgroup label="${g}">${opts}</optgroup>`;
+    }).join('');
+    sel.addEventListener('change', renderSterileSuggest);
+    document.getElementById('optHasLiquid')?.addEventListener('change', renderSterileSuggest);
+    renderSterileSuggest();
+  }
+  function renderSterileSuggest(){
+    const sel=document.getElementById('sterileCatalog');
+    const out=document.getElementById('sterileSuggest');
+    if(!sel || !out) return;
+    const hasLiq = !!document.getElementById('optHasLiquid')?.checked;
+    const it = STERILE_DB.items.find(x=>x.id===sel.value);
+    if(!it){ out.textContent='対象物を選んでください。'; return; }
+
+    let methods = [...it.methods];
+    if(['media_heat_ng','vitamins','serum'].includes(it.id)){
+      methods.sort((a,b)=> (a==='filtration022'? -1:0) - (b==='filtration022'? -1:0));
+    }else{
+      methods.sort((a,b)=> (a.startsWith('autoclave')? -1:0) - (b.startsWith('autoclave')? -1:0));
+    }
+    if(hasLiq && methods.includes('autoclave121')){
+      methods = ['autoclave121', ...methods.filter(m=>m!=='autoclave121')];
+    }
+
+    const cards = methods.map(key=>{
+      const m=STERILE_DB.methods[key]; if(!m) return '';
+      return `
+        <div class="card" style="margin:8px 0;border-color:#edf0ff">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+            <div>
+              <strong>${m.name}</strong>
+              <div class="note">${m.detail}</div>
+              <div class="note">注意：${m.caution}</div>
+            </div>
+            <button class="btn" onclick="sterileCopyToForm('${it.name}','${key}')">記録にコピー</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    const avoid = it.avoid?.length
+      ? `<div class="note">避けたい方法：${it.avoid.map(k=>STERILE_DB.methods[k]?.name||k).join('、')}</div>`
+      : '';
+
+    out.innerHTML = `
+      <div class="note">選択：<strong>${it.name}</strong>${hasLiq?'（液体を含む）':''}</div>
+      ${cards}
+      ${avoid}
+      <div class="note">※ 最終判断は所属ラボのSOPに従ってください。</div>`;
+  }
+  function sterileCopyToForm(itemName, methodKey){
+    const item=document.getElementById('sterileItem');
+    const method=document.getElementById('sterileMethod');
+    const note=document.getElementById('sterileNote');
+    const cat = methodKeyToCategory(methodKey);
+    const detail = STERILE_DB.methods[methodKey]?.name || methodKey;
+    if(item) item.value=itemName;
+    if(method && cat) method.value=cat;
+    if(note) note.value=('カタログ: '+detail);
+  }
+  function sterileAdd(){
+    const rows = JSON.parse(localStorage.getItem('sterileRows')||'[]');
+    rows.push({
+      器材:document.getElementById('sterileItem').value||'',
+      方法:document.getElementById('sterileMethod').value||'',
+      担当:document.getElementById('sterileWho').value||'',
+      日付:document.getElementById('sterileDate').value||'',
+      メモ:document.getElementById('sterileNote').value||'',
+    });
+    localStorage.setItem('sterileRows', JSON.stringify(rows));
+    renderTable(document.getElementById('sterileTable'), rows);
+  }
+  function sterileExport(){
+    const rows = JSON.parse(localStorage.getItem('sterileRows')||'[]');
+    downloadCSV('sterile_log.csv', rows);
+  }
+
+  // ==== SOP（凍結・解凍・継代） ====
+  const SOP_STEPS = {
+    freeze: [
+      '培養液を吸引除去',
+      'PBS(-) 3 mL を静かに加え、培養表面を洗浄 → 吸引除去',
+      'トリプシン 2 mL を加え、室温放置（顕微鏡で剥離を観察）',
+      '大部分が球状になったら培地 2 mL を加えて反応停止、ピペッティングで懸濁',
+      '細胞浮遊液 4 mL を 15 mL 遠沈管に移す（必要なら追加分も）',
+      '細胞計数（必要ならトリパンブルー1:1混合）',
+      '遠心 190–200 g（約1,000 rpm）3 分 → 上清除去、ペレットを軽くほぐす',
+      '氷冷「凍結用培地（DMSO含有）」で懸濁（例：1×10^6 cells/mL で 1 mL/バイアル）',
+      'ラベル済み凍結用バイアルに 1 mL ずつ分注（必要本数）',
+      '凍結用断熱容器→ -80℃、のち液体窒素保管（SOPに従う）',
+      '記録：細胞名、継代数、日付、氏名、本数、濃度'
+    ],
+    thaw: [
+      '15 mL コニカルに培地 9 mL を準備（温めた培地推奨）',
+      '凍結バイアルを素早く解凍（37℃ウォーターバス等、キャップ水没させない）',
+      '細胞浮遊液（~1 mL）を培地 9 mL の管へゆっくり移す（DMSO急性毒性回避）',
+      '遠心 190–200 g（約1,000 rpm）3 分 → 上清除去、ペレットをタッピングでほぐす',
+      '培地 1 mL でピペッティングして懸濁（0.1 mL を別取りして計数用に保持）',
+      '細胞計数と生存率の確認（トリパンブルー 1:1 など）',
+      '必要濃度・液量を計算して調製（例：4×10^4 cells/mL を 16 mL 作成）',
+      '播種：10 cm 皿に 10 mL、T-25 に 5 mL など、容器に均一に分配',
+      '顕微鏡で状態を確認し、CO₂インキュベータへ',
+      '記録：セルライン、容器、播種細胞数/濃度、担当、日付'
+    ],
+    passage_adherent: [
+      '準備：培地 / PBS(-) / トリプシン-EDTA を 37℃で温め、受け皿（新フラスコ/皿）をラベル',
+      '古い培養液を吸引除去',
+      'PBS(-) で軽く洗浄 → 吸引除去',
+      'トリプシン-EDTA を添加（T-25: 0.5–1 mL / T-75: 1–2 mL / 10cm皿: 1–2 mL）',
+      '顕微鏡で剥離を観察（1–3 分）',
+      '停止：完全培地を 2–4 mL 追加して中和',
+      'ピペッティングでダマをほぐし均一化 → 15 mL コニカルへ移す',
+      '（任意）計数：トリパンブルー 1:1 で生細胞濃度を測定',
+      '遠心 190–200 g × 3 分 → 上清除去',
+      '新鮮培地で再懸濁（目標濃度に合わせる）',
+      '新しい容器へ分注（例：T-25 に 5 mL）',
+      '顕微鏡で確認 → CO₂インキュベータへ',
+      'ラベル/記録（セルライン、P数、分割比、播種量、日付、担当）'
+    ],
+    passage_suspension: [
+      '準備：新鮮培地を温め、必要容器にラベル',
+      'フラスコを軽く振って均一懸濁にする',
+      '（任意）計数：生細胞濃度（VCD）を測定',
+      '必要に応じて希釈または置換で分割',
+      '　希釈：目標 Ctarget、現在 C・体積 V。Vadd = V × (C/Ctarget − 1)',
+      '　置換：一部廃棄 → 同量の新鮮培地を追加（例：1:R で分割）',
+      '必要なら洗浄：遠心 190–200 g × 3–5 分 → 上清除去 → 新鮮培地で再懸濁',
+      'ターゲット濃度（例：2–3×10^5 cells/mL）に調整',
+      '必要なら容器を分けて分注',
+      '顕微鏡で確認 → CO₂インキュベータへ',
+      'ラベル/記録（セルライン、P数、分割比/最終濃度、日付、担当）'
+    ]
+  };
+  function splitStepsByArrow(arr){
+    const OUT=[]; const SEP = /\s*(?:→|⇒|➡|->)\s*/g;
+    (arr||[]).forEach(s=>{
+      if(typeof s!=='string'){ OUT.push(s); return; }
+      const parts = s.split(SEP).map(x=>x.trim()).filter(x=>x);
+      if(parts.length<=1){ OUT.push(s); }
+      else{ parts.forEach(p=> OUT.push(p)); }
+    });
+    return OUT;
+  }
+  function renderSOP(containerId, steps, storeKey){
+    const el = document.getElementById(containerId);
+    if(!el) return;
+    const saved = JSON.parse(localStorage.getItem(storeKey) || '[]');
+    let html = '<ol style="padding-left:20px;margin:8px 0">';
+    steps.forEach((s, i)=>{
+      const checked = saved[i] ? 'checked' : '';
+      html += `<li style="margin:6px 0;"><label><input type="checkbox" data-k="${storeKey}" data-i="${i}" ${checked}> ${s}</label></li>`;
+    });
+    html += '</ol><div style="display:flex;gap:8px;flex-wrap:wrap;">'
+         +  `<button class="btn" onclick="sopCheckAll('${storeKey}', true)">すべてチェック</button>`
+         +  `<button class="btn" onclick="sopCheckAll('${storeKey}', false)">全クリア</button>`
+         +  `<button class="btn" onclick="sopExport('${storeKey}')">CSVエクスポート</button>`
+         +  '</div>';
+    el.innerHTML = html;
+    el.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+      cb.addEventListener('change', (e)=>{
+        const k = e.target.getAttribute('data-k');
+        const i = Number(e.target.getAttribute('data-i'));
+        const arr = JSON.parse(localStorage.getItem(k) || '[]');
+        arr[i] = e.target.checked;
+        localStorage.setItem(k, JSON.stringify(arr));
+      });
+    });
+  }
+  // 継代タイプ切替 + 容器目安
+  const PASS_VESSEL_GUIDE = {
+    T25: { name:'T-25 フラスコ', PBS:'3–5 mL', TRY:'0.5–1 mL', STOP:'2–4 mL' },
+    T75: { name:'T-75 フラスコ', PBS:'5–10 mL', TRY:'1–2 mL',   STOP:'4–8 mL' },
+    D10: { name:'10 cm 皿',      PBS:'~10 mL',  TRY:'1–2 mL',   STOP:'4–8 mL' },
+  };
+  function updatePassVessel(){
+    const id = document.getElementById('passVessel')?.value || 'T25';
+    const g = PASS_VESSEL_GUIDE[id];
+    const el = document.getElementById('passageVesselGuide');
+    if(!g || !el) return;
+    el.innerHTML = `【${g.name} 目安】 PBS(-): <b>${g.PBS}</b> / トリプシン: <b>${g.TRY}</b> / 停止培地: <b>${g.STOP}</b>`;
+  }
+  function getPassType(){
+    const saved = localStorage.getItem('pass_type');
+    const elA = document.getElementById('passType_a');
+    const elS = document.getElementById('passType_s');
+    let t = (elA?.checked && 'adherent') || (elS?.checked && 'suspension') || saved || 'adherent';
+    if(elA && elS){ elA.checked = (t==='adherent'); elS.checked = (t==='suspension'); }
+    return t;
+  }
+  function renderPassage(){
+    const t = getPassType();
+    const stepsRaw = (t==='adherent') ? SOP_STEPS.passage_adherent : SOP_STEPS.passage_suspension;
+    const steps = splitStepsByArrow(stepsRaw);
+    const key   = (t==='adherent') ? 'sop_pass_ad'  : 'sop_pass_sp';
+    renderSOP('passageSteps', steps, key);
+  }
+  document.getElementById('passVessel')?.addEventListener('change', updatePassVessel);
+  document.getElementById('btnCopyVessel')?.addEventListener('click', ()=>{
+    const id = document.getElementById('passVessel')?.value || 'T25';
+    const g = PASS_VESSEL_GUIDE[id];
+    const note = document.getElementById('passNote');
+    if(g && note){
+      const txt = `[容器目安] ${g.name}: PBS ${g.PBS} / Trypsin ${g.TRY} / Stop ${g.STOP}`;
+      note.value = note.value ? (note.value + ' | ' + txt) : txt;
+    }
+  });
+  document.getElementById('passType_a')?.addEventListener('change', ()=>{ localStorage.setItem('pass_type','adherent'); renderPassage(); });
+  document.getElementById('passType_s')?.addEventListener('change', ()=>{ localStorage.setItem('pass_type','suspension'); renderPassage(); });
+  // sopCheckAll/Export を分割後長さに対応
+  (function patchSopHelpers(){
+    const _oldCheckAll = typeof sopCheckAll==='function' ? sopCheckAll : null;
+    window.sopCheckAll = function(storeKey, on){
+      let len=0;
+      if(storeKey==='sop_freeze') len=SOP_STEPS.freeze.length;
+      else if(storeKey==='sop_thaw') len=SOP_STEPS.thaw.length;
+      else if(storeKey==='sop_pass_ad') len=splitStepsByArrow(SOP_STEPS.passage_adherent).length;
+      else if(storeKey==='sop_pass_sp') len=splitStepsByArrow(SOP_STEPS.passage_suspension).length;
+      else if(_oldCheckAll) return _oldCheckAll(storeKey,on);
+      const v = Array(len).fill(on);
+      localStorage.setItem(storeKey, JSON.stringify(v));
+      if(storeKey==='sop_freeze') renderSOP('freezeSteps', SOP_STEPS.freeze, 'sop_freeze');
+      else if(storeKey==='sop_thaw') renderSOP('thawSteps', SOP_STEPS.thaw, 'sop_thaw');
+      else if(storeKey==='sop_pass_ad' || storeKey==='sop_pass_sp') renderPassage();
+    };
+    const _oldExport = typeof sopExport==='function' ? sopExport : null;
+    window.sopExport = function(storeKey){
+      const map = {
+        'sop_freeze': {title:'freeze', steps:SOP_STEPS.freeze},
+        'sop_thaw':   {title:'thaw',   steps:SOP_STEPS.thaw},
+        'sop_pass_ad':{title:'passage_adherent',   steps:splitStepsByArrow(SOP_STEPS.passage_adherent)},
+        'sop_pass_sp':{title:'passage_suspension', steps:splitStepsByArrow(SOP_STEPS.passage_suspension)},
+      };
+      if(!map[storeKey]){ if(_oldExport) return _oldExport(storeKey); else return; }
+      const {title, steps} = map[storeKey];
+      const flags = JSON.parse(localStorage.getItem(storeKey)||'[]');
+      const rows = steps.map((s,i)=>({ step:i+1, done:flags[i]?'✔':'', text:s }));
+      downloadCSV(`SOP_${title}.csv`, rows);
+    };
+  })();
+
+  // ==== レシピ（TBE/TAE） ====
+  function calcRecipe(){
+    const kind=document.getElementById('recipeKind').value, volL=n(document.getElementById('recipeVol').value);
+    let comps=[], note='';
+    if(kind==='TAE50x'){ comps=[{name:'Tris-base',qty:242*volL,unit:'g'},{name:'酢酸（acetic acid）',qty:57.1*volL,unit:'mL'},{name:'EDTA・2Na（2H₂O）',qty:18.6*volL,unit:'g'}]; }
+    else{ comps=[{name:'Tris-base',qty:108*volL,unit:'g'},{name:'ホウ酸（boric acid）',qty:55*volL,unit:'g'},{name:'EDTA・2Na（2H₂O）',qty:3.7*volL,unit:'g'}]; note='室温で保存。'; }
+    let html='<div class="row"><div class="label">定容</div><div class="value">'+fmt(volL,3)+' L（超純水）</div></div>';
+    comps.forEach(c=> html+='<div class="row"><div class="label">'+c.name+'</div><div class="value">'+fmt(c.qty,3)+' '+c.unit+'</div></div>');
+    if(note) html+='<div class="note" style="margin-top:6px;">'+note+'</div>';
+    html+='<div class="note" style="margin-top:6px;">溶解手順：Tris / ホウ酸 / EDTA の順に溶かし、（TAEの場合）最後に酢酸を入れて超純水で最終体積に定容。</div>';
+    document.getElementById('recipeOut').innerHTML=html;
+  }
+
+  // ==== 容器表 ====
+  const VESSELS = [
+    {容器:'T-25 フラスコ', 面積:'25', 推奨液量:'5–7'},
+    {容器:'T-75 フラスコ', 面積:'75', 推奨液量:'10–15'},
+    {容器:'T-175 フラスコ', 面積:'175', 推奨液量:'25–35'},
+    {容器:'6-well', 面積:'9.5/ウェル', 推奨液量:'2–3/ウェル'},
+    {容器:'12-well', 面積:'3.8/ウェル', 推奨液量:'1–1.5/ウェル'},
+    {容器:'24-well', 面積:'1.9/ウェル', 推奨液量:'0.4–0.8/ウェル'},
+    {容器:'48-well', 面積:'1.0/ウェル', 推奨液量:'0.2–0.4/ウェル'},
+    {容器:'96-well', 面積:'0.32/ウェル', 推奨液量:'0.1–0.2/ウェル'},
+  ];
+  (function renderVessels(){
+    const el=document.getElementById('vessels_table'); if(!el) return;
+    const rows=VESSELS.map(r=>({容器:r.容器,'成長面積 (cm²)':r.面積,'推奨液量 (mL)':r.推奨液量}));
+    let html='<table><thead><tr>';
+    Object.keys(rows[0]).forEach(k=> html+='<th>'+k+'</th>'); html+='</tr></thead><tbody>';
+    html += rows.map(r=>'<tr>'+Object.keys(rows[0]).map(k=>'<td>'+r[k]+'</td>').join('')+'</tr>').join('');
+    html+='</tbody></table>'; el.innerHTML=html;
+  })();
+
+  // ==== 単位換算 ====
+  const UNITS = {
+    vol:{ base:'L', list:{'µL':1e-6,'mL':1e-3,'L':1} },
+    mass:{ base:'g', list:{'mg':1e-3,'g':1,'kg':1e3} },
+    conc:{ base:'mg/mL', list:{'mg/mL':1,'g/L':1, '% w/v':10} }
+  };
+  function fillUnitOptions(){
+    const cat=document.getElementById('u_cat')?.value||'vol';
+    const list = UNITS[cat].list;
+    const from=document.getElementById('u_from'), to=document.getElementById('u_to');
+    if(!from||!to) return;
+    from.innerHTML=''; to.innerHTML='';
+    Object.keys(list).forEach(k=>{
+      const o1=document.createElement('option'); o1.textContent=k; o1.value=k; from.appendChild(o1);
+      const o2=document.createElement('option'); o2.textContent=k; o2.value=k; to.appendChild(o2);
+    });
+    if(cat==='vol'){ from.value='mL'; to.value='µL'; }
+    if(cat==='mass'){ from.value='mg'; to.value='g'; }
+    if(cat==='conc'){ from.value='mg/mL'; to.value='g/L'; }
+  }
+  document.getElementById('u_cat')?.addEventListener('change', fillUnitOptions);
+  function convUnits(){
+    const cat=document.getElementById('u_cat').value, val=n(document.getElementById('u_val').value), from=document.getElementById('u_from').value, to=document.getElementById('u_to').value;
+    if(val===0){ document.getElementById('u_out').textContent='—'; return; }
+    const baseVal = val * UNITS[cat].list[from];
+    const res = baseVal / UNITS[cat].list[to];
+    document.getElementById('u_out').textContent = res.toLocaleString(undefined,{maximumFractionDigits:6})+' '+to;
+  }
+
+  // ==== 記録タブ 共通関数 ====
+  function dispAdd(){
+    const rows = JSON.parse(localStorage.getItem('dispRows')||'[]');
+    rows.push({
+      区分:document.getElementById('dispType').value||'',
+      容器本数:document.getElementById('dispQty').value||'',
+      担当:document.getElementById('dispWho').value||'',
+      日付:document.getElementById('dispDate').value||'',
+      メモ:document.getElementById('dispNote').value||'',
+    });
+    localStorage.setItem('dispRows', JSON.stringify(rows));
+    renderTable(document.getElementById('dispTable'), rows);
+  }
+  function dispExport(){ const rows = JSON.parse(localStorage.getItem('dispRows')||'[]'); downloadCSV('disposal_log.csv', rows); }
+  function pcrAdd(){} // PCR は本アプリでは未使用（跡置き）
+  function pcrExport(){}
+
+  function cultAdd(){
+    const rows = JSON.parse(localStorage.getItem('cultRows')||'[]');
+    rows.push({ セルライン:document.getElementById('cultCell').value||'', パッセージ:document.getElementById('cultPassage').value||'', 容器条件:document.getElementById('cultVessel').value||'', 担当:document.getElementById('cultWho').value||'', 日付:document.getElementById('cultDate').value||'', メモ:document.getElementById('cultNote').value||'' });
+    localStorage.setItem('cultRows', JSON.stringify(rows));
+    renderTable(document.getElementById('cultTable'), rows);
+  }
+  function cultExport(){ const rows = JSON.parse(localStorage.getItem('cultRows')||'[]'); downloadCSV('culture_log.csv', rows); }
+  function lysisAdd(){
+    const rows = JSON.parse(localStorage.getItem('lysisRows')||'[]');
+    rows.push({ サンプルID:document.getElementById('lysisID').value||'', 方法:document.getElementById('lysisType').value||'', バッファ装置:document.getElementById('lysisBuf').value||'', 担当:document.getElementById('lysisWho').value||'', 日付:document.getElementById('lysisDate').value||'', メモ:document.getElementById('lysisNote').value||'' });
+    localStorage.setItem('lysisRows', JSON.stringify(rows));
+    renderTable(document.getElementById('lysisTable'), rows);
+  }
+  function lysisExport(){ const rows = JSON.parse(localStorage.getItem('lysisRows')||'[]'); downloadCSV('lysis_log.csv', rows); }
+  function passAdd(){
+    const rows = JSON.parse(localStorage.getItem('passRows')||'[]');
+    rows.push({ セルライン:document.getElementById('passCell').value||'', パッセージ:document.getElementById('passPsg').value||'', 担当:document.getElementById('passWho').value||'', 日付:document.getElementById('passDate').value||'', メモ:document.getElementById('passNote').value||'' });
+    localStorage.setItem('passRows', JSON.stringify(rows));
+    renderTable(document.getElementById('passTable'), rows);
+  }
+  function passExport(){ const rows = JSON.parse(localStorage.getItem('passRows')||'[]'); downloadCSV('passage_log.csv', rows); }
+
+  function goTab(name){
+    const btn = document.querySelector(`.tab-btn[data-tab="${name}"]`);
+    if(btn){ btn.click(); }
+  }
+
+  // ==== 初期化 ====
+  function init(){
+    // ロード
+    cellsLoad();
+    loadDBW();
+    reagLoad();
+
+    // 初期描画
+    sterileInitCatalog();
+    renderReagTable();
+    fillUnitOptions();
+    calcCells();
+    planWeek();
+    updatePassVessel();
+    // SOPチェックリスト描画
+    renderSOP('freezeSteps',  SOP_STEPS.freeze,  'sop_freeze');
+    renderSOP('thawSteps',    SOP_STEPS.thaw,    'sop_thaw');
+    renderPassage();
+
+    // 自動計算の配線
+    wireCellsAuto();
+    wireDBW();
+    wireReagAuto();
+  }
+  init();
+</script>
+</body>
+</html>
