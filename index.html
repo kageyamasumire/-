@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ラボ用 計算アプリ（プロトタイプ v0.21）</title>
+<title>ラボ用 計算アプリ（プロトタイプ v0.22）</title>
 <style>
   :root{ --panel-width: 420px; --panel-bg:#fff; --panel-border:#e6e6e6; --accent:#2f54eb; --muted:#666; }
   *{ box-sizing:border-box }
@@ -40,6 +40,8 @@
   table{ width:100%; border-collapse:collapse; font-size:12px }
   th,td{ border-bottom:1px solid #f0f0f0; text-align:left; padding:6px 4px }
   th{ color:#555; font-weight:600 }
+  details{ background:#fafafa; border:1px dashed #e6e6e6; border-radius:8px; padding:8px 10px; }
+  details summary{ cursor:pointer; font-weight:600; }
   @media (max-width:980px){ .right-panel{ width:100% } }
   @media print{
     body{ background:#fff }
@@ -52,12 +54,12 @@
 <body>
   <div class="content">
     <h1>デモページ</h1>
-    <p class="desc">右に <strong>「ラボ用 計算アプリ（プロトタイプ v0.21）」</strong>。細胞数・アガロース・滅菌・試薬調整に加え、凍結/解凍/継代のチェックリスト付き。</p>
+    <p class="desc">右に <strong>「ラボ用 計算アプリ（プロトタイプ v0.22）」</strong>。やさしい表示の下に <em>くわしい式</em> を載せています。</p>
   </div>
 
-  <aside class="right-panel" role="complementary" aria-label="ラボ用 計算アプリ（プロトタイプ v0.21）">
+  <aside class="right-panel" role="complementary" aria-label="ラボ用 計算アプリ（プロトタイプ v0.22）">
     <div class="panel-header">
-      <span class="badge">v0.21</span><div class="title">ラボ用 計算アプリ（プロトタイプ）</div>
+      <span class="badge">v0.22</span><div class="title">ラボ用 計算アプリ（プロトタイプ）</div>
     </div>
 
     <div class="tabs">
@@ -78,8 +80,6 @@
       <button class="tab-btn" data-tab="vessels">細胞培養容器データ集</button>
       <button class="tab-btn" data-tab="units">単位換算</button>
       <button class="tab-btn" data-tab="mediax">培地変換</button>
-      <button class="tab-btn" data-tab="antibody">抗体生産性</button>
-      <button class="tab-btn" data-tab="transfect">トランスフィクション</button>
       <button class="tab-btn" data-tab="tests">テスト</button>
     </div>
 
@@ -120,6 +120,22 @@
           <div class="row"><div class="label">継代培養に必要な細胞液量（目標濃度 ÷ 生細胞濃度 × 容器液量）</div><div class="value" id="r_needCellVol">— mL</div></div>
           <div class="row"><div class="label">継代培養に必要な培地（容器液量 − 必要細胞液量）</div><div class="value" id="r_needMedia">— mL</div></div>
           <div id="cellsWarn" class="warn" style="display:none;">目標濃度が高すぎる可能性：必要な細胞液量が容器液量を超えています。条件を見直してください。</div>
+
+          <details style="margin-top:10px;">
+            <summary>くわしい式を表示</summary>
+            <div class="note">
+              <ul style="margin:8px 0 0 18px;">
+                <li>希釈倍率 DF = (細胞液量 + トリパンブルー) / 細胞液量</li>
+                <li>生存率(%) = (生平均 / 全平均) × 100</li>
+                <li>生細胞濃度 = 生平均 × DF × 10^4（<em>1マス=0.1 mm³=10⁻⁴ mLを仮定</em>）</li>
+                <li>全細胞濃度 = 全平均 × DF × 10^4</li>
+                <li>凍結チューブ中の全細胞数 = 体積[mL] × 全細胞濃度</li>
+                <li>培養容器内の生細胞数 = 生細胞濃度 × 容器液量[mL]</li>
+                <li>必要な細胞液量 = 目標濃度 / 生細胞濃度 × 容器液量[mL]</li>
+                <li>必要な培地 = 容器液量 − 必要細胞液量</li>
+              </ul>
+            </div>
+          </details>
         </div>
       </section>
 
@@ -167,12 +183,36 @@
           <div class="row"><div class="label">ゲル作製用バッファー：ストック</div><div class="value" id="g_stock">— mL</div></div>
           <div class="row"><div class="label">ゲル作製用バッファー：水</div><div class="value" id="g_water">— mL</div></div>
           <div class="row"><div class="label" id="stainLabel">SYBR Safe 添加量（ゲル内）</div><div class="value" id="stainVol">— µL</div></div>
+
+          <details style="margin-top:10px;">
+            <summary>くわしい式を表示</summary>
+            <div class="note">
+              <ul style="margin:8px 0 0 18px;">
+                <li>アガロース質量[g] = (%w/v ÷ 100) × 体積[mL]</li>
+                <li>（例）500 mL のとき = % × 5（g）</li>
+                <li>1×調製：ストック量[mL] = 最終体積 / ストック倍率</li>
+                <li>水[mL] = 最終体積 − ストック量</li>
+                <li>SYBR Safe（10,000×）最終1× → 体積[mL] × 0.1 µL</li>
+                <li>EtBr 10 mg/mL を最終 0.5 µg/mL → 体積[mL] × 0.05 µL</li>
+              </ul>
+            </div>
+          </details>
         </div>
 
         <div class="card">
           <h3>泳動用バッファー（1×）</h3>
           <div class="row"><div class="label" id="runStockLabel">TBE ストックからの量</div><div class="value" id="r_stock">— mL</div></div>
           <div class="row"><div class="label">水</div><div class="value" id="r_water">— mL</div></div>
+
+          <details style="margin-top:10px;">
+            <summary>くわしい式を表示</summary>
+            <div class="note">
+              <ul style="margin:8px 0 0 18px;">
+                <li>ストック量[mL] = 走行液体積 / ストック倍率</li>
+                <li>水[mL] = 走行液体積 − ストック量</li>
+              </ul>
+            </div>
+          </details>
         </div>
 
         <div class="card">
@@ -181,6 +221,17 @@
           <div class="row"><div class="label">推定移動速度（係数×電場）</div><div class="value" id="r_speed">— cm/分</div></div>
           <div class="row"><div class="label">所要時間（移動距離÷速度）</div><div class="value" id="r_time">— 分</div></div>
           <div class="note">※ 速度係数は経験則（既定 0.02）。ラボの実測に合わせて調整してください。</div>
+
+          <details style="margin-top:10px;">
+            <summary>くわしい式を表示</summary>
+            <div class="note">
+              <ul style="margin:8px 0 0 18px;">
+                <li>電圧[V] = 距離[cm] × 電場[V/cm]</li>
+                <li>速度[cm/min] = 速度係数 × 電場</li>
+                <li>時間[min] = 目標移動距離 / 速度</li>
+              </ul>
+            </div>
+          </details>
         </div>
 
         <div class="card">
@@ -289,6 +340,16 @@
           <h3>% w/v から質量</h3>
           <div class="field"><div class="label">濃度</div><div><input type="number" id="pct" step="0.01"><span class="suffix">% w/v</span></div></div>
           <div class="row"><div class="label">必要質量</div><div class="value" id="r_grams">— g（定容で — mL）</div></div>
+
+          <details style="margin-top:10px;">
+            <summary>くわしい式を表示</summary>
+            <div class="note">
+              <ul style="margin:8px 0 0 18px;">
+                <li>必要質量[g] = (%w/v ÷ 100) × V2[mL]</li>
+                <li>例：1%で100 mL → 1 g</li>
+              </ul>
+            </div>
+          </details>
         </div>
 
         <div class="card">
@@ -298,6 +359,16 @@
           <div class="row"><div class="label">必要な V1</div><div class="value" id="r_v1">— mL</div></div>
           <div class="row"><div class="label">希釈溶媒（V2−V1）</div><div class="value" id="r_dil">— mL</div></div>
           <div id="reagWarn" class="warn" style="display:none;">入力が不足/不整合です。</div>
+
+          <details style="margin-top:10px;">
+            <summary>くわしい式を表示</summary>
+            <div class="note">
+              <ul style="margin:8px 0 0 18px;">
+                <li>V1 = (C2 × V2) / C1</li>
+                <li>希釈溶媒 = V2 − V1</li>
+              </ul>
+            </div>
+          </details>
         </div>
 
         <div class="card">
@@ -306,6 +377,16 @@
           <div class="field"><div class="label">最終倍率</div><div><input type="number" id="finalFactor" value="1"><span class="suffix">×</span></div></div>
           <div class="row"><div class="label">必要ストック量</div><div class="value" id="r_fx_v1">— mL</div></div>
           <div class="row"><div class="label">希釈溶媒</div><div class="value" id="r_fx_dil">— mL</div></div>
+
+          <details style="margin-top:10px;">
+            <summary>くわしい式を表示</summary>
+            <div class="note">
+              <ul style="margin:8px 0 0 18px;">
+                <li>V1 = V2 × (最終倍率 / ストック倍率)</li>
+                <li>希釈溶媒 = V2 − V1</li>
+              </ul>
+            </div>
+          </details>
         </div>
 
         <div class="card">
@@ -517,37 +598,6 @@
           <div style="display:flex;gap:8px;"><button class="btn" onclick="calcMediaFactor()">計算</button></div>
           <div class="row"><div class="label">必要ストック量</div><div class="value" id="mx_V1">— mL</div></div>
           <div class="row"><div class="label">希釈溶媒</div><div class="value" id="mx_dil">— mL</div></div>
-        </div>
-      </section>
-
-      <section id="tab-antibody" style="display:none;">
-        <div class="card"><h3>入力</h3>
-          <div class="field"><div class="label">力価（titer）</div><div><input type="number" id="ab_titer" step="0.0001"><span class="suffix">mg/L</span></div></div>
-          <div class="field"><div class="label">培養量</div><div><input type="number" id="ab_vol" step="0.001" value="1"><span class="suffix">L</span></div></div>
-          <div class="field"><div class="label">IVCD</div><div><input type="number" id="ab_ivcd" step="0.001"><span class="suffix">（10^6 cell·day/mL）</span></div></div>
-          <div class="field"><div class="label">※平均VCD×日数（任意）</div><div><input type="number" id="ab_avgvcd" step="0.001" placeholder="平均VCD"><span class="suffix">×10^6 cells/mL</span></div></div>
-          <div class="field"><div class="label"></div><div><input type="number" id="ab_days" step="0.1" placeholder="日数"><span class="suffix">day</span></div></div>
-          <div style="display:flex;gap:8px;"><button class="btn btn-primary" onclick="calcAntibody()">計算</button><button class="btn" onclick="clearForm('tab-antibody')">クリア</button></div>
-        </div>
-        <div class="card"><h3>結果</h3>
-          <div class="row"><div class="label">総産生量</div><div class="value" id="ab_total">— mg</div></div>
-          <div class="row"><div class="label">比生産性 qP</div><div class="value" id="ab_qp">— pg/cell/day</div></div>
-        </div>
-        <div class="note">qP = titer / IVCD（単位整合で <em>pg/cell/day</em> に簡約）。IVCDが未入力なら「平均VCD×日数」で自動計算します。</div>
-      </section>
-
-      <section id="tab-transfect" style="display:none;">
-        <div class="card"><h3>設定</h3>
-          <div class="field"><div class="label">ウェル数</div><div><input type="number" id="tx_wells" value="6" step="1"></div></div>
-          <div class="field"><div class="label">DNA量/ウェル</div><div><input type="number" id="tx_dna_per" value="1" step="0.01"><span class="suffix">µg</span></div></div>
-          <div class="field"><div class="label">試薬比</div><div><input type="number" id="tx_ratio" value="3" step="0.1"><span class="suffix">µL 試薬 / µg DNA</span></div></div>
-          <div class="field"><div class="label">DNA原液濃度</div><div><input type="number" id="tx_stock" value="1" step="0.01"><span class="suffix">µg/µL</span></div></div>
-          <div style="display:flex;gap:8px;"><button class="btn btn-primary" onclick="calcTransfect()">計算</button><button class="btn" onclick="clearForm('tab-transfect')">クリア</button></div>
-        </div>
-        <div class="card"><h3>結果（/ウェル と 合計）</h3>
-          <div class="row"><div class="label">DNA体積</div><div class="value" id="tx_v_dna">— µL / — µL</div></div>
-          <div class="row"><div class="label">試薬体積</div><div class="value" id="tx_v_reag">— µL / — µL</div></div>
-          <div class="row"><div class="label">（参考）1:1で希釈する場合の混合液量</div><div class="value" id="tx_mix">— µL / — µL</div></div>
         </div>
       </section>
 
@@ -1042,28 +1092,6 @@
     document.getElementById('mx_dil').textContent=dil.toFixed(3)+' mL';
   }
 
-  function calcAntibody(){
-    const t=_n(document.getElementById('ab_titer').value), L=_n(document.getElementById('ab_vol').value);
-    let ivcd=_n(document.getElementById('ab_ivcd').value);
-    const avg=_n(document.getElementById('ab_avgvcd').value), days=_n(document.getElementById('ab_days').value);
-    if(!ivcd && avg && days) ivcd = avg*days;
-    const total = t*L;
-    const qp = (ivcd>0)? (t/ivcd) : 0;
-    document.getElementById('ab_total').textContent = total? total.toFixed(3)+' mg':'— mg';
-    document.getElementById('ab_qp').textContent = qp? qp.toFixed(3)+' pg/cell/day':'— pg/cell/day';
-  }
-
-  function calcTransfect(){
-    const wells=_n(document.getElementById('tx_wells').value), dnaPer=_n(document.getElementById('tx_dna_per').value), ratio=_n(document.getElementById('tx_ratio').value), stock=_n(document.getElementById('tx_stock').value);
-    const vDNA_per = stock>0? dnaPer/stock : 0;
-    const vReag_per = dnaPer*ratio;
-    const vMix_per = (vDNA_per + vReag_per);
-    const vDNA_all = vDNA_per*wells, vReag_all = vReag_per*wells, vMix_all=vMix_per*wells;
-    document.getElementById('tx_v_dna').textContent = (vDNA_per?vDNA_per.toFixed(2):'—')+' µL / '+(vDNA_all?vDNA_all.toFixed(2):'—')+' µL';
-    document.getElementById('tx_v_reag').textContent = (vReag_per?vReag_per.toFixed(2):'—')+' µL / '+(vReag_all?vReag_all.toFixed(2):'—')+' µL';
-    document.getElementById('tx_mix').textContent = (vMix_per?vMix_per.toFixed(2):'—')+' µL / '+(vMix_all?vMix_all.toFixed(2):'—')+' µL';
-  }
-
   // ==== 記録タブ 共通関数 ====
   function dispAdd(){
     const rows = JSON.parse(localStorage.getItem('dispRows')||'[]');
@@ -1100,7 +1128,7 @@
   }
   function lysisExport(){ const rows = JSON.parse(localStorage.getItem('lysisRows')||'[]'); downloadCSV('lysis_log.csv', rows); }
 
-  // ==== SOP チェックリスト（唯一の定義） ====
+  // ==== SOP チェックリスト ====
   const SOP_STEPS = {
     freeze: [
       '培養液を吸引除去',
@@ -1112,7 +1140,7 @@
       '遠心 190–200 g（約1,000 rpm）3 分 → 上清除去、ペレットを軽くほぐす',
       '算出体積の氷冷「凍結用培地（DMSO含有）」で懸濁（例：1×10^6 cells/mL で 1 mL/バイアル）',
       'ラベル済み凍結用バイアルに 1 mL ずつ分注（必要本数）',
-      '凍結用断熱容器→ -80℃、のち液体窒素保管（ラボSOPに従う）',
+      '-80℃凍結→のち液体窒素保管（SOPに従う）',
       '記録：細胞名、継代数、日付、氏名、本数、濃度'
     ],
     thaw: [
@@ -1122,9 +1150,9 @@
       '遠心 190–200 g（約1,000 rpm）3 分 → 上清除去、ペレットをタッピングでほぐす',
       '培地 1 mL でピペッティングして懸濁（0.1 mL を別取りして計数用に保持）',
       '細胞計数と生存率の確認（トリパンブルー 1:1 など）',
-      '必要濃度・液量を計算して調製（例：4×10^4 cells/mL を 16 mL 作成 ⇒ 細胞液 DD mL + 培地 (16−DD) mL）',
+      '必要濃度・液量を計算して調製',
       '播種：10 cm 皿に 10 mL、T-25 に 5 mL など、容器に均一に分配',
-      '顕微鏡で状態を確認し、CO₂インキュベータへ',
+      '顕微鏡で状態を確認 → CO₂インキュベータへ',
       '記録：セルライン、容器、播種細胞数/濃度、担当、日付'
     ],
     passage: [
@@ -1135,9 +1163,9 @@
       '細胞浮遊液を 15 mL 遠沈管へ移す',
       '遠心 190–200 g（約1,000 rpm）3 分',
       '上清を吸引除去し、ペレットをタッピングでほぐす',
-      '培地 2 mL でピペッティング（0.2 mL を計数用に取り別け、残りは氷上）',
-      '細胞計数・必要液量の計算（例：1×10^6 cells/mL に調整、容器に応じ総量5 mL など）',
-      '播種：T-25 へ 5 mL、またはディッシュ等へ均一化して分注',
+      '培地 2 mL でピペッティング（0.2 mL を計数用に取り別け）',
+      '細胞計数・必要液量の計算',
+      '播種：T-25 へ 5 mL など容器に応じ分注',
       '顕微鏡で状態確認 → CO₂インキュベータへ',
       '記録：セルライン、P数、分割比、播種量、担当、日付'
     ]
@@ -1162,10 +1190,9 @@
     el.querySelectorAll('input[type=checkbox]').forEach(cb=>{
       cb.addEventListener('change', (e)=>{
         const k = e.target.getAttribute('data-k');
-        a = e.target.getAttribute('data-i'); // for debugging? (no; remove risk) – ignore
+        a = e.target.getAttribute('data-i');
       });
     });
-    // 正式保存（イベントを個別に設定）
     el.querySelectorAll('input[type=checkbox]').forEach(cb=>{
       cb.addEventListener('change', (e)=>{
         const k = e.target.getAttribute('data-k');
