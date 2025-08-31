@@ -62,17 +62,60 @@ const STEPS = {
   ],
 };
 
-function StepCard({ step, text, role }) {
+function Arrow() { return <div className="flex justify-center text-2xl text-slate-400">↓</div>; }
+
+function StepCard({ step, text, role, completed, onToggle }) {
   return (
-    <div className="border rounded-lg p-3 bg-white shadow-sm text-center">
-      <div className="font-semibold mb-1">Step {step}</div>
-      <div className="text-sm text-slate-700 whitespace-pre-line">{text}</div>
+    <div className={`border rounded-lg p-3 shadow-sm text-center bg-white`}>
+      <div className="flex items-center justify-center gap-2 mb-1">
+        <input type="checkbox" checked={completed} onChange={onToggle} className="w-4 h-4 accent-emerald-600" />
+        <div className="font-semibold">Step {step}</div>
+      </div>
+      <div className={`text-sm text-slate-700 whitespace-pre-line ${completed ? "line-through text-slate-400" : ""}`}>{text}</div>
       {role && <div className="text-xs text-slate-500 mt-1">{role}</div>}
     </div>
   );
 }
 
-function Arrow() { return <div className="flex justify-center text-2xl text-slate-400">↓</div>; }
+function StepsList({ mode }) {
+  const steps = STEPS[mode] || [];
+  const key = `checks:${mode}`;
+  const init = () => {
+    try {
+      if (typeof window === 'undefined') return Array(steps.length).fill(false);
+      const raw = localStorage.getItem(key);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.from({ length: steps.length }, (_, i) => Boolean(arr[i]));
+    } catch {
+      return Array(steps.length).fill(false);
+    }
+  };
+  const [checks, setChecks] = useState(init);
+
+  React.useEffect(() => {
+    setChecks(init());
+  }, [mode, steps.length]);
+
+  const toggle = (i) => () => {
+    setChecks((prev) => {
+      const next = [...prev];
+      next[i] = !next[i];
+      if (typeof window !== 'undefined') localStorage.setItem(key, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  return (
+    <div className="space-y-2">
+      {steps.map((s, idx) => (
+        <React.Fragment key={s.step}>
+          <StepCard step={s.step} text={s.text} role={s.role} completed={checks[idx]} onToggle={toggle(idx)} />
+          {idx < steps.length - 1 && <Arrow />}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
 
 function SterilizationView() {
   const [selItem, setSelItem] = useState("溶液・培地(熱変性を起こさない)");
@@ -94,21 +137,10 @@ function SterilizationView() {
   const methodLines = ITEMS[selItem] || [];
   return (
     <div className="space-y-3">
-      <label className="flex flex-col text-sm">
-        <span>対象物</span>
-        <select className="border rounded-lg p-2" value={selItem} onChange={(e) => setSelItem(e.target.value)}>
-          {Object.keys(ITEMS).map((it) => (
-            <option key={it} value={it}>{it}</option>
-          ))}
-        </select>
-      </label>
-      <div className="rounded-xl border border-slate-200 p-3">
-        <div className="font-semibold mb-2">推奨される滅菌方法</div>
-        <ul className="list-disc ml-6 text-sm">
-          {methodLines.map((m, i) => (
-            <li key={i}>{m}</li>
-          ))}
-        </ul>
+      <label className="flex flex-col text-sm"><span>対象物</span><select className="border rounded p-2" value={selItem} onChange={(e)=>setSelItem(e.target.value)}>{Object.keys(ITEMS).map(it => <option key={it} value={it}>{it}</option>)}</select></label>
+      <div className="rounded border p-3 text-sm bg-white">
+        <div className="font-semibold mb-1">推奨される滅菌方法</div>
+        <ul className="list-disc ml-6">{methodLines.map((m,i)=>(<li key={i}>{m}</li>))}</ul>
       </div>
     </div>
   );
@@ -139,7 +171,7 @@ function ReagentPrepView() {
         <label className="flex flex-col text-sm"><span>レシピ</span><select className="border rounded p-2" value={sel} onChange={(e) => setSel(e.target.value)}>{Object.keys(recipes).map(k => <option key={k} value={k}>{k}</option>)}</select></label>
         <label className="flex flex-col text-sm"><span>目標体積 (mL)</span><input className="border rounded p-2" type="number" min={1} value={vol} onChange={(e) => setVol(Math.max(1, Number(e.target.value)))} /></label>
       </div>
-      <div className="rounded border p-3 text-sm">
+      <div className="rounded border p-3 text-sm bg-white">
         <div className="font-semibold mb-1">計量リスト（{vol} mL）</div>
         <ul className="list-disc ml-6">{scaled.map((it, i) => (<li key={i}>{it.name}: {it.val} {it.unit}</li>))}</ul>
         <div className="mt-3 font-semibold">手順</div>
@@ -159,21 +191,20 @@ function StockSolutionsView() {
   const [pct, setPct] = useState(1);
   const [VmL, setVmL] = useState(100);
   const grams = (pct / 100) * VmL;
-
   return (
     <div className="space-y-4">
       <h2 className="font-semibold">ストック溶液の調整</h2>
-      <div className="rounded border p-3 text-sm space-y-2">
+      <div className="rounded border p-3 text-sm space-y-2 bg-white">
         <div className="font-medium">希釈計算 (C1V1 = C2V2)</div>
         <div className="grid md:grid-cols-4 gap-2">
           <label> C1<input className="border p-1 w-full" type="number" value={C1} onChange={(e)=>setC1(Number(e.target.value))} /></label>
           <label> C2<input className="border p-1 w-full" type="number" value={C2} onChange={(e)=>setC2(Number(e.target.value))} /></label>
           <label> V2(mL)<input className="border p-1 w-full" type="number" value={V2} onChange={(e)=>setV2(Number(e.target.value))} /></label>
-          <div className="flex items-end gap-2"><div className="border rounded p-2 w-full">V1(加えるストック): {V1.toFixed(2)} mL</div></div>
+          <div className="flex items-end gap-2"><div className="border rounded p-2 w-full">V1: {V1.toFixed(2)} mL</div></div>
         </div>
-        <div className="text-xs">希釈溶媒: {Vd.toFixed(2)} mL</div>
+        <div className="text-xs">溶媒: {Vd.toFixed(2)} mL</div>
       </div>
-      <div className="rounded border p-3 text-sm space-y-2">
+      <div className="rounded border p-3 text-sm space-y-2 bg-white">
         <div className="font-medium">w/v 計算（% w/v）</div>
         <div className="grid md:grid-cols-3 gap-2">
           <label>% <input className="border p-1 w-full" type="number" value={pct} onChange={(e)=>setPct(Number(e.target.value))} /></label>
@@ -181,35 +212,6 @@ function StockSolutionsView() {
           <div className="flex items-end"><div className="border rounded p-2 w-full">秤量: {grams.toFixed(3)} g</div></div>
         </div>
       </div>
-      <ExtraTests />
-    </div>
-  );
-}
-
-function ExtraTests() {
-  const molCases = [
-    { label: "1.5 M Tris, 100 mL, MW 121.14", M: 1.5, vol: 100, mw: 121.14, expect: 18.2 },
-    { label: "0.5 M Tris, 100 mL, MW 121.14", M: 0.5, vol: 100, mw: 121.14, expect: 6.1 },
-    { label: "1.0 M NaCl, 250 mL, MW 58.44", M: 1.0, vol: 250, mw: 58.44, expect: 14.61 },
-  ];
-  const tol = 0.05;
-  const c1v1 = { C1: 100, C2: 10, V2: 100, expectV1: 10 };
-  const wv = { pct: 2, V: 150, expectG: 3 };
-  const cc = { liveSum: 80, deadSum: 20, squares: 4, cellVol: 100, tbVol: 100, expectViab: 80, expectLiveConc: 4e5 };
-  const liveAvg = cc.liveSum / cc.squares; const deadAvg = cc.deadSum / cc.squares; const totalAvg = liveAvg + deadAvg; const df = (cc.cellVol + cc.tbVol) / cc.cellVol; const viab = totalAvg>0? (liveAvg/totalAvg)*100:0; const liveConc = liveAvg*df*1e4;
-  const pass = (got, exp) => Math.abs(got - exp) <= tol || Math.abs(got - exp)/Math.max(1, exp) < 0.01;
-  return (
-    <div className="rounded border p-3 text-sm">
-      <div className="font-medium mb-2">内蔵テスト</div>
-      <div className="mb-2">モル計算</div>
-      <table className="w-full text-xs border mb-3"><thead className="bg-slate-100"><tr><th className="text-left px-2 py-1">ケース</th><th className="text-right px-2 py-1">計算値(g)</th><th className="text-right px-2 py-1">期待値(g)</th><th className="text-center px-2 py-1">結果</th></tr></thead><tbody>{molCases.map((c,i)=>{const got=c.M*(c.vol/1000)*c.mw; const ok=pass(got,c.expect); return (<tr key={i} className="border-t"><td className="px-2 py-1">{c.label}</td><td className="px-2 py-1 text-right">{got.toFixed(2)}</td><td className="px-2 py-1 text-right">{c.expect.toFixed(2)}</td><td className="px-2 py-1 text-center">{ok?"✅":"❌"}</td></tr>);})}</tbody></table>
-      <div className="mb-2">C1V1</div>
-      <div className="text-xs">V1 = {(c1v1.C2*c1v1.V2/c1v1.C1).toFixed(2)} mL / 期待 {c1v1.expectV1.toFixed(2)} mL → {(pass(c1v1.C2*c1v1.V2/c1v1.C1,c1v1.expectV1)?"✅":"❌")}</div>
-      <div className="mb-2 mt-2">%w/v</div>
-      <div className="text-xs">秤量 = {(wv.pct/100*wv.V).toFixed(2)} g / 期待 {wv.expectG.toFixed(2)} g → {(pass(wv.pct/100*wv.V,wv.expectG)?"✅":"❌")}</div>
-      <div className="mb-2 mt-2">細胞数/生存率</div>
-      <div className="text-xs">生存率 = {viab.toFixed(1)}% / 期待 {cc.expectViab}% → {(pass(viab,cc.expectViab)?"✅":"❌")}、 生細胞濃度 = {liveConc.toExponential(2)} / 期待 {cc.expectLiveConc.toExponential(2)} → {(pass(liveConc,cc.expectLiveConc)?"✅":"❌")}</div>
-      <div className="text-xs text-slate-600 mt-2">誤差は ±0.05 g または 1% を許容。</div>
     </div>
   );
 }
@@ -224,11 +226,10 @@ function MolarityCalcView() {
   const vol = clampNonNeg(parseFloat(volStr));
   const L = vol / 1000; const grams = M * L * mw;
   const formulaText = useMemo(() => `重さ(g) = 濃度(M) × 体積(L) × 分子量(g/mol)\n         = ${M} × ${L.toFixed(3)} × ${mw}\n         = ${fmt(grams, 2)} g`, [M, L, mw, grams]);
-
   return (
     <div className="space-y-4">
       <h2 className="font-semibold">モル濃度計算（文章で入力）</h2>
-      <div className="rounded border p-3 text-base leading-relaxed flex flex-wrap items-center gap-2">
+      <div className="rounded border p-3 text-base leading-relaxed flex flex-wrap items-center gap-2 bg-white">
         <span>濃度</span>
         <input type="number" step="0.1" className="mx-1 w-24 border rounded p-1 text-right" value={mStr} onChange={(e)=>setMStr(e.target.value)} />
         <span>M の</span>
@@ -272,7 +273,7 @@ function VesselDataView() {
   return (
     <div className="space-y-3">
       <h2 className="font-semibold">培養容器データ集</h2>
-      <table className="w-full text-sm border">
+      <table className="w-full text-sm border bg-white">
         <thead className="bg-slate-50"><tr><th className="px-2 py-1 text-left">容器</th><th className="px-2 py-1 text-left">増殖面積(cm²)</th><th className="px-2 py-1 text-left">目安液量(mL)</th><th className="px-2 py-1 text-left">播種目安</th></tr></thead>
         <tbody>{rows.map((r,i)=> (<tr key={i} className="border-t"><td className="px-2 py-1">{r.name}</td><td className="px-2 py-1">{r.area}</td><td className="px-2 py-1">{r.vol}</td><td className="px-2 py-1">{r.seed}</td></tr>))}</tbody>
       </table>
@@ -314,7 +315,7 @@ function CellCountView() {
         <label>培養容器液量(mL)<input type="number" value={cultureVol} onChange={(e) => setCultureVol(Number(e.target.value))} className="border p-1" /></label>
         <label>目標濃度(cells/mL)<input type="number" value={targetConc} onChange={(e) => setTargetConc(Number(e.target.value))} className="border p-1" /></label>
       </div>
-      <div className="border rounded p-2 text-sm space-y-1">
+      <div className="border rounded p-2 text-sm space-y-1 bg-white">
         <p>生平均: {liveAvg}</p>
         <p>死平均: {deadAvg}</p>
         <p>全平均: {totalAvg}</p>
@@ -363,32 +364,44 @@ function CalendarCultureScheduler() {
         <label className="flex flex-col text-sm"><span>実験日に必要な細胞数 (cells)</span><input type="number" value={neededCells} onChange={(e) => setNeededCells(e.target.value)} /></label>
         <label className="flex flex-col text-sm"><span>実験日に必要な細胞液量 (mL)</span><input type="number" value={neededVol} onChange={(e) => setNeededVol(e.target.value)} /></label>
       </div>
-      <table className="min-w-full text-sm border border-slate-200"><thead className="bg-slate-50"><tr><th className="px-2 py-1 text-left">区分</th><th className="px-2 py-1 text-left">日付</th><th className="px-2 py-1 text-left">経過h</th><th className="px-2 py-1 text-left">理論濃度</th><th className="px-2 py-1 text-left">状態</th></tr></thead><tbody>{timeline.map((p,i)=>(<tr key={i} className={p.status === "Over" ? "bg-red-50" : p.status === "Close" ? "bg-amber-50" : ""}><td className="px-2 py-1">{p.label}</td><td className="px-2 py-1">{p.date}</td><td className="px-2 py-1">{Math.round(p.hours)}</td><td className="px-2 py-1">{fmtSci(p.Ct)} cells/mL</td><td className="px-2 py-1">{p.status}</td></tr>))}</tbody></table>
+      <table className="min-w-full text-sm border border-slate-200 bg-white"><thead className="bg-slate-50"><tr><th className="px-2 py-1 text-left">区分</th><th className="px-2 py-1 text-left">日付</th><th className="px-2 py-1 text-left">経過h</th><th className="px-2 py-1 text-left">理論濃度</th><th className="px-2 py-1 text-left">状態</th></tr></thead><tbody>{timeline.map((p,i)=>(<tr key={i} className={p.status === "Over" ? "bg-red-50" : p.status === "Close" ? "bg-amber-50" : ""}><td className="px-2 py-1">{p.label}</td><td className="px-2 py-1">{p.date}</td><td className="px-2 py-1">{Math.round(p.hours)}</td><td className="px-2 py-1">{fmtSci(p.Ct)} cells/mL</td><td className="px-2 py-1">{p.status}</td></tr>))}</tbody></table>
       <div className="text-xs text-slate-600">※ 理論値であり、実際は培地条件やコンフルエンスで変動します。</div>
     </div>
+  );
+}
+
+function Tab({ active, onClick, children }) {
+  return (
+    <button onClick={onClick} className={`px-3 py-2 rounded-full text-sm font-medium transition ${active ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-800 hover:bg-slate-300"}`}>{children}</button>
   );
 }
 
 export default function App() {
   const [mode, setMode] = useState("adherent");
   return (
-    <div className="max-w-3xl mx-auto p-4 space-y-4">
-      <h1 className="text-xl font-bold">細胞継代・融解・凍結・滅菌・計算・計画・試薬/ストック/容器</h1>
-      <div className="flex gap-2 flex-wrap">
-        <button onClick={() => setMode("adherent")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${mode === "adherent" ? "bg-blue-600 text-white" : "bg-slate-200"}`}>付着細胞</button>
-        <button onClick={() => setMode("suspension")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${mode === "suspension" ? "bg-blue-600 text-white" : "bg-slate-200"}`}>浮遊細胞</button>
-        <button onClick={() => setMode("thaw")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${mode === "thaw" ? "bg-blue-600 text-white" : "bg-slate-200"}`}>凍結細胞の融解</button>
-        <button onClick={() => setMode("freeze")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${mode === "freeze" ? "bg-blue-600 text-white" : "bg-slate-200"}`}>凍結保存</button>
-        <button onClick={() => setMode("sterilize")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${mode === "sterilize" ? "bg-blue-600 text-white" : "bg-slate-200"}`}>滅菌方法</button>
-        <button onClick={() => setMode("reagents")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${mode === "reagents" ? "bg-blue-600 text-white" : "bg-slate-200"}`}>試薬の調整</button>
-        <button onClick={() => setMode("stocks")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${mode === "stocks" ? "bg-blue-600 text-white" : "bg-slate-200"}`}>ストック溶液</button>
-        <button onClick={() => setMode("molar")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${mode === "molar" ? "bg-blue-600 text-white" : "bg-slate-200"}`}>モル濃度計算</button>
-        <button onClick={() => setMode("vessels")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${mode === "vessels" ? "bg-blue-600 text-white" : "bg-slate-200"}`}>培養容器データ</button>
-        <button onClick={() => setMode("count")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${mode === "count" ? "bg-blue-600 text-white" : "bg-slate-200"}`}>細胞数/生存率</button>
-        <button onClick={() => setMode("plan")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${mode === "plan" ? "bg-blue-600 text-white" : "bg-slate-200"}`}>細胞培養計画</button>
-      </div>
+    <div className="max-w-4xl mx-auto p-4 space-y-5">
+      <header className="space-y-2">
+        <h1 className="text-2xl font-bold tracking-tight">だれでもわかる 細胞培養アプリ</h1>
+        <p className="text-sm text-slate-600">やさしい表示＋詳しい式・手順。SOP/施設規程を最優先してください。</p>
+      </header>
 
-      {mode === "sterilize" ? (
+      <nav className="flex gap-2 flex-wrap">
+        <Tab active={mode === "adherent"} onClick={() => setMode("adherent")}>付着継代</Tab>
+        <Tab active={mode === "suspension"} onClick={() => setMode("suspension")}>浮遊継代</Tab>
+        <Tab active={mode === "thaw"} onClick={() => setMode("thaw")}>凍結融解</Tab>
+        <Tab active={mode === "freeze"} onClick={() => setMode("freeze")}>凍結保存</Tab>
+        <Tab active={mode === "steril"} onClick={() => setMode("steril")}>滅菌方法</Tab>
+        <Tab active={mode === "reagents"} onClick={() => setMode("reagents")}>試薬の調整</Tab>
+        <Tab active={mode === "stocks"} onClick={() => setMode("stocks")}>ストック溶液</Tab>
+        <Tab active={mode === "molar"} onClick={() => setMode("molar")}>モル濃度</Tab>
+        <Tab active={mode === "vessels"} onClick={() => setMode("vessels")}>容器データ</Tab>
+        <Tab active={mode === "count"} onClick={() => setMode("count")}>細胞数/生存率</Tab>
+        <Tab active={mode === "plan"} onClick={() => setMode("plan")}>細胞培養計画</Tab>
+      </nav>
+
+      {mode === "adherent" || mode === "suspension" || mode === "thaw" || mode === "freeze" ? (
+        <StepsList mode={mode} />
+      ) : mode === "steril" ? (
         <SterilizationView />
       ) : mode === "reagents" ? (
         <ReagentPrepView />
@@ -402,18 +415,11 @@ export default function App() {
         <CellCountView />
       ) : mode === "plan" ? (
         <CalendarCultureScheduler />
-      ) : (
-        <div className="space-y-2">
-          {STEPS[mode].map((s, idx) => (
-            <React.Fragment key={s.step}>
-              <StepCard step={s.step} text={s.text} role={s.role} />
-              {idx < STEPS[mode].length - 1 && <Arrow />}
-            </React.Fragment>
-          ))}
-        </div>
-      )}
+      ) : null}
 
-      <div className="text-xs text-slate-600">SOPと施設規程を最優先してください。</div>
+      <footer className="text-xs text-slate-600">© 2025 すみれラボ / 教育用途。SOP・添付文書を最優先。</footer>
     </div>
   );
 }
+
+          
