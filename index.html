@@ -336,7 +336,9 @@ function ReagentPrepView() {
           ))}
         </ol>
 
-        <div className="text-xs text-slate-600 mt-2">※ 役割: {r.role}</div>
+        <div className="text-xs text-slate-600 mt-2">
+          ※ 役割: {r.role}
+        </div>
         <div className="text-xs text-slate-600 mt-1">
           最終判断はSOP・添付文書に従う。方法: {(r.method || []).join(" / ")}
         </div>
