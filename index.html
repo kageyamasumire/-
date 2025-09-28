@@ -53,7 +53,7 @@
   </table>
   <div class="btns">
     <button id="addRow">＋ 行を追加</button>
-    <button id="calcCount" class="big">✅ 計数を計算</button>
+    <button id="calcCount" class="big">計算</button>
     <button id="clearCount">クリア</button>
   </div>
 </section>
@@ -77,7 +77,7 @@
 
 <!-- ③ 結果（文章） -->
 <section>
-  <h2>③ 計算結果（やさしい説明）</h2>
+  <h2>③ 計算結果</h2>
   <div id="story" class="story">
     ここに結果が出ます。上で数字を入れてボタンをおしてね。
   </div>
@@ -157,9 +157,9 @@ function calcCounts(){
 function renderCountsToStory(){
   const s=document.getElementById('story');
   s.innerHTML = `👀 生きている細胞 合計 <span class="num">${fmt(state.sumL,6)}</span>、平均 <span class="num">${fmt(state.avgL,6)}</span><br>
-😴 死んでいる細胞 合計 <span class="num">${fmt(state.sumD,6)}</span>、平均 <span class="num">${fmt(state.avgD,6)}</span><br>
-➕ 全部の合計 <span class="num">${fmt(state.sumT,6)}</span>、平均 <span class="num">${fmt(state.avgT,6)}</span><br>
-💚 生存率 <span class="num">${state.avgT>0? state.viab.toFixed(2):'0'}</span> %`;
+ 死んでいる細胞 合計 <span class="num">${fmt(state.sumD,6)}</span>、平均 <span class="num">${fmt(state.avgD,6)}</span><br>
+ 全部の合計 <span class="num">${fmt(state.sumT,6)}</span>、平均 <span class="num">${fmt(state.avgT,6)}</span><br>
+ 生存率 <span class="num">${state.avgT>0? state.viab.toFixed(2):'0'}</span> %`;
 }
 
 function renderAllToSummary(){
@@ -241,11 +241,11 @@ document.getElementById('calcVolumes').addEventListener('click',()=>{
 
   // おはなし表示
   const s=document.getElementById('story');
-  s.innerHTML = `🧪 計数液量 <span class="num">${fmt(mixVol_uL,6)}</span> µL、希釈倍率 DF <span class="num">${fmt(DF,6)}</span> 倍。<br>
+  s.innerHTML = `計数液量 <span class="num">${fmt(mixVol_uL,6)}</span> µL、希釈倍率 DF <span class="num">${fmt(DF,6)}</span> 倍。<br>
 生細胞濃度 <span class="num">${sci(Clive,2)}</span> cells/mL、全細胞濃度 <span class="num">${sci(Ctotal,2)}</span> cells/mL。<br>
 凍結チューブ（${fmt(tubeV,2)} mL）→ <span class="num">${fmt(cellsTube,6)}</span> cells、容器（${fmt(vesselV,2)} mL）→ <span class="num">${fmt(cellsVessel,6)}</span> live cells。` +
   (isFinite(Ct)&&Ct>0 && isFinite(Vtarget)&&Vtarget>0
-    ? `<br><br>🎯 目標濃度 <span class="num">${sci(Ct,2)}</span> cells/mL の <span class="num">${fmt(Vtarget,6)}</span> mL をつくるには、<br>
+    ? `<br><br> 目標濃度 <span class="num">${sci(Ct,2)}</span> cells/mL の <span class="num">${fmt(Vtarget,6)}</span> mL をつくるには、<br>
        細胞液 <span class="num">${isFinite(state.VsNeeded)?fmt(state.VsNeeded,6):'0'}</span> mL ＋ 培地 <span class="num">${isFinite(state.VmedNeeded)?fmt(state.VmedNeeded,6):'0'}</span> mL ${guide}`
     : ''
   );
