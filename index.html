@@ -63,24 +63,24 @@
 <section>
   <h2>② 入力（体積など）</h2>
   <div class="grid">
-    <div class="field"><label>計数で使った細胞液（原液, <b>μL</b>）</label><input id="Vorig_uL" type="number" step="any" placeholder="例：100"></div>
-    <div class="field"><label>計数で使ったトリパンブルー（<b>μL</b>）</label><input id="Vtb_uL" type="number" step="any" placeholder="例：100"></div>
-    <div class="field"><label>培養容器に入れる液量（mL）</label><input id="Vwell" type="number" step="any" placeholder="例：10"></div>
+    <div class="field"><label>計数で使った細胞液量（原液, <b>μL</b>）</label><input id="Vorig_uL" type="number" step="any" placeholder="例：100"></div>
+    <div class="field"><label>計数で使ったトリパンブルー液量（<b>μL</b>）</label><input id="Vtb_uL" type="number" step="any" placeholder="例：100"></div>
+    <div class="field"><label>培養容器内の液量（mL）</label><input id="Vwell" type="number" step="any" placeholder="例：10"></div>
     <div class="field"><label>凍結チューブ1本の体積（mL・任意）</label><input id="Vfreeze" type="number" step="any" placeholder="例：1"></div>
-    <div class="field"><label>目標の濃さ Ct（cells/mL・任意）</label><input id="Ct" type="number" step="any" placeholder="例：1.0e6"></div>
-    <div class="field"><label>作りたい最終の体積（mL・任意）</label><input id="Vtarget" type="number" step="any" placeholder="例：10"></div>
+    <div class="field"><label>目標の濃度 Ct（cells/mL・任意）</label><input id="Ct" type="number" step="any" placeholder="例：1.0e6"></div>
+    <div class="field"><label>目標の体積（mL・任意）</label><input id="Vtarget" type="number" step="any" placeholder="例：10"></div>
   </div>
   <div class="btns">
-    <button id="calcVolumes" class="big">✅ 体積つかって計算</button>
+    <button id="calcVolumes" class="big">計算</button>
     <button id="clearVolumes">クリア</button>
   </div>
 </section>
 
-<!-- ③ おはなし表示 -->
+<!-- ③ 結果 -->
 <section>
-  <h2>③ おはなし</h2>
+  <h2>③ 結果</h2>
   <div id="story" class="story">
-    ここに結果が出ます。上で数字を入れて <b>✅ 計算する</b> をおしてね。
+    ここに結果が出ます。上で数字を入れて <b>計算</b> をおしてね。
   </div>
 </section>
 
@@ -125,9 +125,9 @@ document.getElementById('calcCount').addEventListener('click',()=>{
   const s = document.getElementById('story');
   s.innerHTML = `👀 きみがかぞえた <b>生きている細胞</b> は <span class="num">${fmt(sumL,6)}</span> 個、<br>
   <b>死んでいる細胞</b> は <span class="num">${fmt(sumD,6)}</span> 個 でした。<br><br>
-  ぜんぶあわせると <span class="num">${fmt(sumT,6)}</span> 個。1回あたりのへいきんは <span class="num">${fmt(avgT,6)}</span> 個！<br>
-  だから <b>生きているわりあい</b> は <span class="num">${isFinite(viab)?viab.toFixed(2):''}</span> % だよ。<br>
-  ⬇つぎは下の「体積」を入れて、こさ（濃度）を出してみよう！`;
+  ぜんぶ合わせると <span class="num">${fmt(sumT,6)}</span> 個。平均は <span class="num">${fmt(avgT,6)}</span> 個！<br>
+  だから <b>生存率</b> は <span class="num">${isFinite(viab)?viab.toFixed(2):''}</span> % だよ。<br>
+  ⬇つぎは下の「体積」を入れて、濃度を出してみよう！`;
   updateSummary();
 });
 
@@ -164,8 +164,8 @@ document.getElementById('calcVolumes').addEventListener('click',()=>{
   const liveAvg = counted? liveSum/counted : NaN;
   const totalAvg = counted? totalSum/counted : NaN;
 
-  const Clive = isFinite(liveAvg) ? liveAvg * 1e4 * DF : NaN;   // 生細胞の濃さ（cells/mL）
-  const Ctotal = isFinite(totalAvg)? totalAvg* 1e4 * DF : NaN;  // 全細胞のこさ
+  const Clive = isFinite(liveAvg) ? liveAvg * 1e4 * DF : NaN;   // 生細胞濃度（cells/mL）
+  const Ctotal = isFinite(totalAvg)? totalAvg* 1e4 * DF : NaN;  // 全細胞濃度
 
   last.Clive = Clive; last.Ctotal = Ctotal;
 
@@ -190,15 +190,15 @@ document.getElementById('calcVolumes').addEventListener('click',()=>{
 
   // おはなしをやさしく表示
   const s = document.getElementById('story');
-  s.innerHTML += `<br><br>🧪 体積からこさ（濃度）を出したよ。<br>
-  ・生きている細胞のこさは <span class="num">${fmt(Clive,6)}</span> cells/mL<br>
-  ・ぜんぶの細胞のこさは <span class="num">${fmt(Ctotal,6)}</span> cells/mL<br>
+  s.innerHTML += `<br><br>🧪 体積から濃度を出したよ。<br>
+  ・生細胞濃度は <span class="num">${fmt(Clive,6)}</span> cells/mL<br>
+  ・全細胞濃度は <span class="num">${fmt(Ctotal,6)}</span> cells/mL<br>
   ・凍結チューブ（<span class="num">${fmt(vF,6)}</span> mL）には <span class="num">${fmt(cellsPerTube,6)}</span> 個はいります<br>
   ・培養容器（<span class="num">${fmt(Vwell,6)}</span> mL）に入る生きている細胞は <span class="num">${fmt(cellsInVessel,6)}</span> 個だよ<br>
   ・（計数のときのうすめた倍率＝<span class="num">${fmt(DF,6)}</span>倍）`;
 
   if (isFinite(Vs_needed) && isFinite(Vmed_needed)){
-    s.innerHTML += `<br><br>🎯 目的のこさ <span class="num">${fmt(targetConc,6)}</span> cells/mL の
+    s.innerHTML += `<br><br>🎯 目的の濃度 <span class="num">${fmt(targetConc,6)}</span> cells/mL の
     <span class="num">${fmt(Vtarget,6)}</span> mL をつくるには…<br>
     👉 細胞液（原液）<span class="num">${fmt(Vs_needed,6)}</span> mL と、培地 <span class="num">${fmt(Vmed_needed,6)}</span> mL をまぜよう！ ${guide}`;
   }
@@ -211,7 +211,7 @@ document.getElementById('clearCount').addEventListener('click',()=>{
   document.querySelectorAll('#tbl input').forEach(i=>i.value='');
   document.querySelectorAll('#tbl .total').forEach(td=>td.textContent='');
   Object.keys(last).forEach(k=>last[k]=NaN);
-  document.getElementById('story').innerHTML='ここに結果が出ます。上で数字を入れて <b>✅ 計算する</b> をおしてね。';
+  document.getElementById('story').innerHTML='ここに結果が出ます。上で数字を入れて <b>計算</b> をおしてね。';
   updateSummary();
 });
 document.getElementById('clearVolumes').addEventListener('click',()=>{
@@ -223,13 +223,13 @@ document.getElementById('clearVolumes').addEventListener('click',()=>{
 function updateSummary(){
   const box = document.getElementById('summary');
   const lines = [];
-  lines.push(`生きている細胞 合計: <b>${fmt(last.sumL,6)}</b> 個`);
-  lines.push(`死んでいる細胞 合計: <b>${fmt(last.sumD,6)}</b> 個`);
-  lines.push(`ぜんぶの細胞 合計: <b>${fmt(last.sumT,6)}</b> 個`);
-  lines.push(`ぜんぶの細胞 平均: <b>${fmt(last.avgT,6)}</b> 個/回`);
-  lines.push(`生きているわりあい: <b>${isFinite(last.viab)?last.viab.toFixed(2):''}</b> %`);
-  if (isFinite(last.Clive)) lines.push(`生細胞のこさ: <b>${fmt(last.Clive,6)}</b> cells/mL`);
-  if (isFinite(last.Ctotal)) lines.push(`全細胞のこさ: <b>${fmt(last.Ctotal,6)}</b> cells/mL`);
+  lines.push(`生細胞 合計: <b>${fmt(last.sumL,6)}</b> 個`);
+  lines.push(`死細胞 合計: <b>${fmt(last.sumD,6)}</b> 個`);
+  lines.push(`全細胞 合計: <b>${fmt(last.sumT,6)}</b> 個`);
+  lines.push(`全細胞 平均: <b>${fmt(last.avgT,6)}</b> 個/回`);
+  lines.push(`生存率: <b>${isFinite(last.viab)?last.viab.toFixed(2):''}</b> %`);
+  if (isFinite(last.Clive)) lines.push(`生細胞濃度: <b>${fmt(last.Clive,6)}</b> cells/mL`);
+  if (isFinite(last.Ctotal)) lines.push(`全細胞濃度: <b>${fmt(last.Ctotal,6)}</b> cells/mL`);
   if (isFinite(last.DF)) lines.push(`（計数時のうすめた倍率: ${fmt(last.DF,6)} 倍）`);
   box.innerHTML = lines.join('<br>');
 }
