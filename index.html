@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>かんたん細胞けいさん（超やさしい版）</title>
+<title>誰でもわかる細胞培養計算機</title>
 <style>
   :root{ --bg:#0f172a; --panel:#111827; --muted:#94a3b8; --accent:#38bdf8; --text:#e5e7eb; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; }
   *{box-sizing:border-box}
@@ -33,17 +33,17 @@
 </head>
 <body>
 <header>
-  <h1>かんたん細胞けいさん（超やさしい版）</h1>
-  <div class="mini">むずかしい言葉ぬき。数字を入れてボタンをおすだけ！</div>
+  <h1>誰でもわかる細胞培養計算機</h1>
+  <div class="mini">数字を入れてボタンをおすだけ！</div>
 </header>
 <main>
 
 <!-- ① 細胞を数えた回数 -->
 <section>
   <h2>① 細胞を数えた回数</h2>
-  <div class="pill">まずは数えた数を入れてね（ヘモサイトメーターの大きいマス1つ分）</div>
+  <div class="pill">まずは数えた数を入れてね（ヘモサイトメーターの大きいマス1つ分）デフォルト4回。必要なら「行を追加」。</div>
   <table id="tbl">
-    <thead><tr><th>#</th><th>生きている細胞</th><th>死んでいる細胞</th><th>ぜんぶ</th></tr></thead>
+    <thead><tr><th>#</th><th>生きている細胞</th><th>死んでいる細胞</th><th></thead>
     <tbody>
       <tr><td>1</td><td><input class="live" inputmode="decimal"></td><td><input class="dead" inputmode="decimal"></td><td class="total"></td></tr>
       <tr><td>2</td><td><input class="live" inputmode="decimal"></td><td><input class="dead" inputmode="decimal"></td><td class="total"></td></tr>
