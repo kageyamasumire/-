@@ -188,7 +188,7 @@ document.getElementById('calcVolumes').addEventListener('click',()=>{
   ・全細胞濃度: <span class="num">${sci(Ctotal,2)}</span> cells/mL<br>
   ・凍結チューブ(${fmt(vF,2)} mL): ${fmt(cellsPerTube,6)} 個<br>
   ・培養容器(${fmt(Vwell,2)} mL): ${fmt(cellsInVessel,6)} 個<br>
-  （希釈倍率=${fmt(DF,3)} 倍）`;
+  ・希釈倍率=${fmt(DF,3)} 倍`;
 
   if(isFinite(Vs_needed)&&isFinite(Vmed_needed)){
     s.innerHTML+=`<br><br>🎯 目的の濃度 <span class="num">${sci(Ct,2)}</span> cells/mL の ${fmt(Vtarget,2)} mL をつくるには…<br>
@@ -221,7 +221,7 @@ function updateSummary(){
   lines.push(`生存率: <b>${isFinite(last.viab)?last.viab.toFixed(2):''}</b> %`);
   if(isFinite(last.Clive)) lines.push(`生細胞濃度: <b>${sci(last.Clive,2)}</b> cells/mL`);
   if(isFinite(last.Ctotal)) lines.push(`全細胞濃度: <b>${sci(last.Ctotal,2)}</b> cells/mL`);
-  if(isFinite(last.DF)) lines.push(`（希釈倍率: ${fmt(last.DF,3)} 倍）`);
+  if(isFinite(last.DF)) lines.push(`希釈倍率: ${fmt(last.DF,3)} 倍`);
   box.innerHTML=lines.join('<br>');
 }
 </script>
