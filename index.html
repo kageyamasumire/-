@@ -1,113 +1,3 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>誰でもわかる細胞培養計算機</title>
-<style>
-  :root{ --bg:#0f172a; --panel:#111827; --muted:#94a3b8; --accent:#38bdf8; --text:#e5e7eb; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; }
-  *{box-sizing:border-box}
-  body{margin:0; background:var(--bg); color:var(--text); font-family:ui-sans-serif,system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",Arial;}
-  header{padding:18px 20px; border-bottom:1px solid #1f2937; background:linear-gradient(180deg,#0b1222,#0f172a 60%);}
-  h1{margin:0; font-size:clamp(20px,4.5vw,28px)}
-  main{max-width:980px; margin:0 auto; padding:16px}
-  section{background:rgba(17,24,39,.7); border:1px solid #233044; border-radius:16px; padding:14px; margin-bottom:16px}
-  h2{margin:0 0 10px 0; font-size:18px}
-  .grid{display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr));}
-  .field{display:flex; flex-direction:column; gap:6px;}
-  label{font-size:13px; color:var(--muted)}
-  input,button{border:1px solid #2a3a52; background:#0b1222; color:var(--text); border-radius:12px; padding:12px; font-size:16px; outline:none}
-  input:focus{border-color:var(--accent); box-shadow:0 0 0 2px rgba(56,189,248,.15)}
-  button{cursor:pointer; background:#1e293b}
-  table{width:100%; border-collapse:collapse; font-size:16px; margin-top:8px}
-  th,td{border-bottom:1px solid #233044; padding:10px; text-align:center}
-  th{color:#a8b3c7}
-  .btns{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
-  .story{line-height:1.9; font-size:18px; background:#0b1324; border:1px solid #263650; border-radius:16px; padding:14px}
-  .num{font-weight:800; color:#38bdf8}
-  .mini{font-size:12px; color:#94a3b8}
-  .big{font-size:20px}
-  .kv{display:grid; grid-template-columns:minmax(180px,1fr) 1fr; gap:8px 16px; align-items:center}
-  .kv .k{color:#cbd5e1}
-</style>
-</head>
-<body>
-<header>
-  <h1>誰でもわかる細胞培養計算機</h1>
-  <div class="mini">数字を入れてボタンをおすだけ！</div>
-</header>
-<main>
-
-<!-- ① 細胞を数えた回数 -->
-<section>
-  <h2>① 細胞を数えた回数</h2>
-  <div class="mini">各行はヘモサイトメーターの大きいマス1つ分。デフォルト4回、必要なら「行を追加」。</div>
-  <table id="tbl">
-    <thead><tr><th>#</th><th>生きている細胞</th><th>死んでいる細胞</th><th>合計</th></tr></thead>
-    <tbody>
-      <tr><td>1</td><td><input class="live" inputmode="decimal"></td><td><input class="dead" inputmode="decimal"></td><td class="total"></td></tr>
-      <tr><td>2</td><td><input class="live" inputmode="decimal"></td><td><input class="dead" inputmode="decimal"></td><td class="total"></td></tr>
-      <tr><td>3</td><td><input class="live" inputmode="decimal"></td><td><input class="dead" inputmode="decimal"></td><td class="total"></td></tr>
-      <tr><td>4</td><td><input class="live" inputmode="decimal"></td><td><input class="dead" inputmode="decimal"></td><td class="total"></td></tr>
-    </tbody>
-  </table>
-  <div class="btns">
-    <button id="addRow">＋ 行を追加</button>
-    <button id="calcCount" class="big">✅ 計数を計算</button>
-    <button id="clearCount">クリア</button>
-  </div>
-</section>
-
-<!-- ② 入力（体積など） -->
-<section>
-  <h2>② 入力（体積など）</h2>
-  <div class="grid">
-    <div class="field"><label>計数で使った細胞液量（原液, <b>µL</b>）</label><input id="Vorig_uL" type="number" step="any" placeholder="例：100"></div>
-    <div class="field"><label>計数で使ったトリパンブルー液量（<b>µL</b>）</label><input id="Vtb_uL" type="number" step="any" placeholder="例：100"></div>
-    <div class="field"><label>培養容器内の液量（mL）</label><input id="Vwell" type="number" step="any" placeholder="例：10"></div>
-    <div class="field"><label>凍結チューブ1本の体積（mL・任意）</label><input id="Vfreeze" type="number" step="any" placeholder="例：1"></div>
-    <div class="field"><label>目標の濃度 Ct（cells/mL・任意）</label><input id="Ct" type="number" step="any" placeholder="例：1.0e6"></div>
-  </div>
-  <div class="btns">
-    <button id="calcVolumes" class="big">🧪 体積・濃度を計算</button>
-    <button id="clearVolumes">クリア</button>
-  </div>
-</section>
-
-<!-- ③ 結果（文章） -->
-<section>
-  <h2>③ 計算結果（やさしい説明）</h2>
-  <div id="story" class="story">
-    ここに結果が出ます。上で数字を入れてボタンをおしてね。
-  </div>
-</section>
-
-<!-- ④ まとめ（式どおりの数値リスト） -->
-<section>
-  <h2>④ まとめ（式どおり）</h2>
-  <div id="summary" class="story">
-    <div class="kv">
-      <div class="k">生細胞数の合計</div><div id="sumLive">0</div>
-      <div class="k">生細胞数の平均</div><div id="avgLive">0</div>
-      <div class="k">死細胞数の合計</div><div id="sumDead">0</div>
-      <div class="k">死細胞数の平均</div><div id="avgDead">0</div>
-      <div class="k">全細胞数の合計</div><div id="sumTotal">0</div>
-      <div class="k">全細胞数の平均</div><div id="avgTotal">0</div>
-      <div class="k">計数液量（細胞液 + トリパンブルー）</div><div id="mixVol">0 µL</div>
-      <div class="k">希釈倍率（必要液量 ÷ 細胞液量）</div><div id="DF">1</div>
-      <div class="k">生存率（生平均 ÷ 全平均 × 100）</div><div id="viab">0 %</div>
-      <div class="k">生細胞濃度（生平均 × DF × 10^4）</div><div id="Clive">0 cells/mL</div>
-      <div class="k">全細胞濃度（全平均 × DF × 10^4）</div><div id="Ctotal">0 cells/mL</div>
-      <div class="k">凍結チューブ中の全細胞数（体積[mL] × 全細胞濃度）</div><div id="cellsTube">0 cells</div>
-      <div class="k">培養容器内の生細胞数（生細胞濃度 × 容器液量[mL]）</div><div id="cellsVessel">0 cells</div>
-      <div class="k">継代培養に必要な細胞液量（目標濃度 ÷ 生細胞濃度 × 容器液量）</div><div id="VsNeeded">0 mL</div>
-      <div class="k">継代培養に必要な培地（容器液量 − 必要細胞液量）</div><div id="VmedNeeded">0 mL</div>
-    </div>
-  </div>
-</section>
-
-</main>
-
 <script>
 function num(v){ if(v==null||v==='') return NaN; const s=String(v).replace(/[,\\s]/g,''); const x=parseFloat(s); return isFinite(x)?x:NaN; }
 function fmt(v,d=6){ return isFinite(v)?Number(v).toLocaleString(undefined,{maximumSignificantDigits:d}):'0'; }
@@ -118,7 +8,11 @@ let state = {
   sumL:0, sumD:0, sumT:0, avgL:0, avgD:0, avgT:0, viab:0,
   Vorig_uL:0, Vtb_uL:0, mixVol_uL:0, DF:1,
   Clive:0, Ctotal:0, Vfreeze:0, Vwell:0, Ct:NaN,
-  cellsTube:0, cellsVessel:0, VsNeeded:0, VmedNeeded:0
+  cellsTube:0, cellsVessel:0,
+  // ▼ “式どおり”の生細胞液量・培地量（生で保持：負の値もあり）
+  VsNeeded_raw:0, VmedNeeded_raw:0,
+  // ▼ ガイド表示用（負の培地は0に丸め）
+  VsNeeded:0, VmedNeeded:0
 };
 
 document.getElementById('addRow').addEventListener('click',()=>{
@@ -143,7 +37,6 @@ function calcCounts(){
   const avgD = n? sumD/n : 0;
   const avgT = n? sumT/n : 0;
   const viab = avgT>0 ? (avgL/avgT*100) : 0;
-
   Object.assign(state,{sumL, sumD, sumT, avgL, avgD, avgT, viab});
 }
 
@@ -172,26 +65,26 @@ function renderAllToSummary(){
 
   document.getElementById('cellsTube').textContent = isFinite(state.cellsTube)? `${fmt(state.cellsTube,6)} cells` : '0 cells';
   document.getElementById('cellsVessel').textContent = isFinite(state.cellsVessel)? `${fmt(state.cellsVessel,6)} cells` : '0 cells';
-  document.getElementById('VsNeeded').textContent = isFinite(state.VsNeeded)? `${fmt(state.VsNeeded,6)} mL` : '0 mL';
-  document.getElementById('VmedNeeded').textContent = isFinite(state.VmedNeeded)? `${fmt(state.VmedNeeded,6)} mL` : '0 mL';
+
+  // ★ “式どおり”の値をそのまま表示（負の値もそのまま）
+  document.getElementById('VsNeeded').textContent  = isFinite(state.VsNeeded_raw)? `${fmt(state.VsNeeded_raw,6)} mL` : '0 mL';
+  document.getElementById('VmedNeeded').textContent= isFinite(state.VmedNeeded_raw)? `${fmt(state.VmedNeeded_raw,6)} mL` : '0 mL';
 }
 
 document.getElementById('calcCount').addEventListener('click',()=>{
   calcCounts();
   renderCountsToStory();
-  // DF等はまだ未計算のまま
   renderAllToSummary();
 });
 
 document.getElementById('calcVolumes').addEventListener('click',()=>{
-  // まず計数結果を前提に
-  calcCounts();
+  calcCounts(); // 前提
 
   const Vorig_uL = num(document.getElementById('Vorig_uL').value);
   const Vtb_uL   = num(document.getElementById('Vtb_uL').value);
-  const Vwell    = num(document.getElementById('Vwell').value);
+  const Vwell    = num(document.getElementById('Vwell').value);   // 容器液量[mL]
   const Vfreeze  = num(document.getElementById('Vfreeze').value);
-  const Ct       = num(document.getElementById('Ct').value);
+  const Ct       = num(document.getElementById('Ct').value);      // 目標濃度
 
   const mixVol_uL = (isFinite(Vorig_uL)? Vorig_uL:0) + (isFinite(Vtb_uL)? Vtb_uL:0);
   const DF = (isFinite(Vorig_uL) && Vorig_uL>0) ? (mixVol_uL / Vorig_uL) : 1;
@@ -206,27 +99,35 @@ document.getElementById('calcVolumes').addEventListener('click',()=>{
   const vesselV = isFinite(Vwell)? Vwell : 0;
   const cellsVessel = (vesselV>0 && Clive>0) ? (Clive * vesselV) : 0;
 
-  // 継代（容器液量を「目標の体積」とみなす版）
-  let VsNeeded=0, VmedNeeded=0;
+  // ★ 継代（式どおりの“生”値）: Vs_raw = 容器液量×(Ct/Clive), Vmed_raw = 容器液量−Vs_raw
+  let Vs_raw = NaN, Vmed_raw = NaN, Vs_disp = NaN, Vmed_disp = NaN, guide = '';
   if (isFinite(Ct) && Ct>0 && Clive>0 && vesselV>0){
-    VsNeeded = vesselV * (Ct / Clive);
-    VmedNeeded = Math.max(vesselV - VsNeeded, 0);
+    Vs_raw   = vesselV * (Ct / Clive);
+    Vmed_raw = vesselV - Vs_raw;
+    // ガイド表示用（負の培地は0に丸め、注意書きを付ける）
+    Vs_disp   = Vs_raw;
+    Vmed_disp = Vmed_raw < 0 ? 0 : Vmed_raw;
+    if (Vmed_raw < 0) guide = '（※ 目標がこすぎるので濃縮が必要）';
   }
 
   Object.assign(state,{
     Vorig_uL, Vtb_uL, mixVol_uL, DF,
     Clive, Ctotal, Vfreeze:tubeV, Vwell:vesselV, Ct,
-    cellsTube, cellsVessel, VsNeeded, VmedNeeded
+    cellsTube, cellsVessel,
+    VsNeeded_raw: Vs_raw, VmedNeeded_raw: Vmed_raw, // まとめ欄は“式どおり”
+    VsNeeded: Vs_disp, VmedNeeded: Vmed_disp        // おはなしは丸め表示
   });
 
-  // 文章
+  // おはなし（実務向けに丸め表示）
   const s=document.getElementById('story');
-  s.innerHTML += `<br><br>🧪 計数液量は <span class="num">${fmt(mixVol_uL,6)}</span> µL、希釈倍率 DF は <span class="num">${fmt(DF,6)}</span> 倍。<br>
-  生細胞濃度は <span class="num">${sci(Clive,2)}</span> cells/mL、全細胞濃度は <span class="num">${sci(Ctotal,2)}</span> cells/mL。<br>
-  凍結チューブ（${fmt(tubeV,2)} mL）には <span class="num">${fmt(cellsTube,6)}</span> 個、<br>
-  培養容器（${fmt(vesselV,2)} mL）には <span class="num">${fmt(cellsVessel,6)}</span> 個の生きている細胞が入るよ。` +
-  (isFinite(Ct)&&Ct>0 ? `<br><br>目標濃度 <span class="num">${sci(Ct,2)}</span> cells/mL で容器量 ${fmt(vesselV,2)} mL を作るには、<br>
-  細胞液 <span class="num">${fmt(VsNeeded,6)}</span> mL ＋ 培地 <span class="num">${fmt(VmedNeeded,6)}</span> mL！` : '');
+  s.innerHTML += `<br><br>🧪 計数液量 <span class="num">${fmt(mixVol_uL,6)}</span> µL、希釈倍率 DF <span class="num">${fmt(DF,6)}</span> 倍。<br>
+  生細胞濃度 <span class="num">${sci(Clive,2)}</span> cells/mL、全細胞濃度 <span class="num">${sci(Ctotal,2)}</span> cells/mL。<br>
+  凍結チューブ（${fmt(tubeV,2)} mL）→ <span class="num">${fmt(cellsTube,6)}</span> cells、容器（${fmt(vesselV,2)} mL）→ <span class="num">${fmt(cellsVessel,6)}</span> live cells。` +
+  (isFinite(Ct)&&Ct>0 && isFinite(vesselV)&&vesselV>0
+    ? `<br><br>🎯 目標濃度 <span class="num">${sci(Ct,2)}</span> cells/mL・容器量 ${fmt(vesselV,2)} mL のとき、<br>
+       細胞液 <span class="num">${isFinite(state.VsNeeded)?fmt(state.VsNeeded,6):'0'}</span> mL ＋ 培地 <span class="num">${isFinite(state.VmedNeeded)?fmt(state.VmedNeeded,6):'0'}</span> mL ${guide}`
+    : ''
+  );
 
   renderAllToSummary();
 });
@@ -236,19 +137,17 @@ document.getElementById('clearCount').addEventListener('click',()=>{
   document.querySelectorAll('#tbl .total').forEach(td=>td.textContent='');
   state = {sumL:0,sumD:0,sumT:0,avgL:0,avgD:0,avgT:0,viab:0,
            Vorig_uL:0,Vtb_uL:0,mixVol_uL:0,DF:1,Clive:0,Ctotal:0,Vfreeze:0,Vwell:0,Ct:NaN,
-           cellsTube:0,cellsVessel:0,VsNeeded:0,VmedNeeded:0};
+           cellsTube:0,cellsVessel:0,VsNeeded_raw:0,VmedNeeded_raw:0,VsNeeded:0,VmedNeeded:0};
   document.getElementById('story').innerHTML='ここに結果が出ます。上で数字を入れてボタンをおしてね。';
   renderAllToSummary();
 });
 document.getElementById('clearVolumes').addEventListener('click',()=>{
   ['Vorig_uL','Vtb_uL','Vwell','Vfreeze','Ct'].forEach(id=>document.getElementById(id).value='');
-  // 体積系だけ初期化
-  Object.assign(state,{Vorig_uL:0,Vtb_uL:0,mixVol_uL:0,DF:1,Clive:0,Ctotal:0,Vfreeze:0,Vwell:0,Ct:NaN,cellsTube:0,cellsVessel:0,VsNeeded:0,VmedNeeded:0});
+  Object.assign(state,{Vorig_uL:0,Vtb_uL:0,mixVol_uL:0,DF:1,Clive:0,Ctotal:0,Vfreeze:0,Vwell:0,Ct:NaN,
+                       cellsTube:0,cellsVessel:0,VsNeeded_raw:0,VmedNeeded_raw:0,VsNeeded:0,VmedNeeded:0});
   renderAllToSummary();
 });
 
 // 初期描画
 renderAllToSummary();
 </script>
-</body>
-</html>
